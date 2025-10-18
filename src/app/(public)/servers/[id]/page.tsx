@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Server, Users, Globe, Copy, ExternalLink, Map, Activity } from 'lucide-react';
 import { CopyButton } from '@/components/ui/copy-button';
+import { fetchServerStatus, formatServerAddress } from '@/lib/server-status';
 
 // Force dynamic rendering and disable all caching
 export const dynamic = 'force-dynamic';
@@ -38,58 +39,39 @@ async function ServerContent({ params }: ServerPageProps) {
   let motd: string | null = null;
   
   try {
-    const serverAddress = server.port === 25565 ? server.ipAddress : `${server.ipAddress}:${server.port}`;
-    const response = await fetch(`https://api.mcstatus.io/v2/status/java/${serverAddress}`, {
-      next: { revalidate: 0 }, // Always fetch fresh data
-      cache: 'no-store', // Don't cache
+    const serverAddress = formatServerAddress(server.ipAddress, server.port);
+    const status = await fetchServerStatus(serverAddress);
+    
+    // Debug logging
+    console.log('mcstatus.io response:', {
+      online: status.online,
+      players: status.players,
+      version: status.version,
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      
-      // Debug logging
-      console.log('mcstatus.io response:', {
-        online: data.online,
-        players: data.players,
-        version: data.version?.name_clean,
-      });
-
-      // Get player list
-      if (data.players?.list) {
-        playerList = data.players.list.map((player: any) => ({
-          name: player.name_clean || player.name_raw,
-          uuid: player.uuid,
-        }));
-      }
-
-      // Get server icon and MOTD
-      serverIcon = data.icon || null;
-      motd = data.motd?.clean || null;
-
-      // Update local server object with live data (no database update)
-      server = {
-        ...server,
-        status: data.online ? 'online' : 'offline',
-        playersOnline: data.players?.online || 0,
-        playersMax: data.players?.max || 0,
-        version: data.version?.name_clean || null,
-      };
-      
-      console.log('Server after update:', {
-        playersOnline: server.playersOnline,
-        playersMax: server.playersMax,
-        status: server.status,
-      });
-    } else {
-      // Server is offline
-      server = {
-        ...server,
-        status: 'offline',
-        playersOnline: 0,
-        playersMax: 0,
-        version: null,
-      };
+    // Get player list
+    if (status.playerList) {
+      playerList = status.playerList;
     }
+
+    // Get server icon and MOTD
+    serverIcon = status.icon || null;
+    motd = status.motd || null;
+
+    // Update local server object with live data (no database update)
+    server = {
+      ...server,
+      status: status.online ? 'online' : 'offline',
+      playersOnline: status.players?.online || 0,
+      playersMax: status.players?.max || 0,
+      version: status.version || null,
+    };
+    
+    console.log('Server after update:', {
+      playersOnline: server.playersOnline,
+      playersMax: server.playersMax,
+      status: server.status,
+    });
   } catch (error) {
     console.error(`Error fetching server status:`, error);
     // Set server as offline on error

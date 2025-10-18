@@ -4,7 +4,7 @@ import { servers } from '@/db/schema';
 import { desc } from 'drizzle-orm';
 import Link from 'next/link';
 import { Server, Users, Globe, ExternalLink, Map } from 'lucide-react';
-import { cachedExternalFetch } from '@/lib/connection-warmup';
+import { fetchServerStatus, formatServerAddress } from '@/lib/server-status';
 
 // Force dynamic rendering and disable all caching
 export const dynamic = 'force-dynamic';
@@ -16,19 +16,19 @@ export const metadata = {
 };
 
 // Function to fetch live server status from mcstatus.io (no database update)
-async function fetchServerStatus(server: any) {
+async function fetchServerStatusForDisplay(server: any) {
   try {
-    const serverAddress = server.port === 25565 ? server.ipAddress : `${server.ipAddress}:${server.port}`;
-    const data = await cachedExternalFetch(`https://api.mcstatus.io/v2/status/java/${serverAddress}`);
+    const serverAddress = formatServerAddress(server.ipAddress, server.port);
+    const status = await fetchServerStatus(serverAddress);
 
     return {
       ...server,
-      status: data.online ? 'online' : 'offline',
-      playersOnline: data.players?.online || 0,
-      playersMax: data.players?.max || 0,
-      version: data.version?.name_clean || null,
-      motd: data.motd?.clean || null,
-      icon: data.icon || null,
+      status: status.online ? 'online' : 'offline',
+      playersOnline: status.players?.online || 0,
+      playersMax: status.players?.max || 0,
+      version: status.version || null,
+      motd: status.motd || null,
+      icon: status.icon || null,
     };
   } catch (error) {
     console.error(`Error fetching server status for ${server.name}:`, error);
@@ -51,7 +51,7 @@ async function ServersContent() {
 
   // Fetch live status for each server
   const serverList = await Promise.all(
-    serverListRaw.map(server => fetchServerStatus(server))
+    serverListRaw.map(server => fetchServerStatusForDisplay(server))
   );
 
   return (

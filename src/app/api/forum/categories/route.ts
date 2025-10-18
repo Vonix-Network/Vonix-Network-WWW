@@ -32,9 +32,10 @@ const createCategorySchema = z.object({
   slug: z.string().min(1).max(100),
   icon: z.string().optional(),
   orderIndex: z.number().default(0),
-  createPermission: z.enum(['user', 'moderator', 'admin']).default('user'),
-  replyPermission: z.enum(['user', 'moderator', 'admin']).default('user'),
-  viewPermission: z.enum(['user', 'moderator', 'admin']).default('user'),
+  // TODO: Add permission fields after database migration
+  // createPermission: z.enum(['user', 'moderator', 'admin']).default('user'),
+  // replyPermission: z.enum(['user', 'moderator', 'admin']).default('user'),
+  // viewPermission: z.enum(['user', 'moderator', 'admin']).default('user'),
 });
 
 export async function POST(request: NextRequest) {
@@ -76,9 +77,7 @@ export async function POST(request: NextRequest) {
         slug: data.slug,
         icon: data.icon || null,
         orderIndex: data.orderIndex,
-        createPermission: data.createPermission,
-        replyPermission: data.replyPermission,
-        viewPermission: data.viewPermission,
+        // TODO: Add permission fields after database migration
       })
       .returning();
 

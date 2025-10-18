@@ -14,6 +14,10 @@ interface SpaceBackgroundProps {
   mouseInteraction?: boolean;
   animateConnections?: boolean;
   backgroundGradient?: boolean;
+  responsive?: boolean;
+  retina?: boolean;
+  preset?: 'subtle' | 'medium' | 'intense' | 'minimal';
+  gradientTheme?: 'vonix' | 'ocean' | 'sunset' | 'fire' | 'cool' | 'warm' | 'purple' | 'green' | 'blue';
   style?: React.CSSProperties;
 }
 
@@ -29,6 +33,10 @@ export default function SpaceBackground({
   mouseInteraction = true,
   animateConnections = true,
   backgroundGradient = false,
+  responsive = true,
+  retina = true,
+  preset,
+  gradientTheme,
   style = {}
 }: SpaceBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -45,9 +53,10 @@ export default function SpaceBackground({
         const SpaceModule = await import('../lib/space.js');
         const Space = SpaceModule.default;
 
-        spaceRef.current = new Space(canvasRef.current, {
+        // Build configuration object
+        let config: any = {
           particles,
-          gradient,
+          gradient: gradientTheme ? Space.gradients[gradientTheme] : gradient,
           speed,
           size,
           opacity,
@@ -55,10 +64,22 @@ export default function SpaceBackground({
           connectionOpacity,
           mouseInteraction,
           animateConnections,
-          backgroundGradient
-        });
+          backgroundGradient,
+          responsive,
+          retina
+        };
 
-        setIsLoaded(true);
+        // Apply preset if specified
+        if (preset && Space.presets[preset]) {
+          config = { ...Space.presets[preset], ...config };
+        }
+
+        // Ensure canvas is not null before creating Space instance
+        const canvas = canvasRef.current;
+        if (canvas) {
+          spaceRef.current = new Space(canvas, config);
+          setIsLoaded(true);
+        }
       } catch (error) {
         console.error('Failed to load Space.js:', error);
         // Fallback: create a simple animated background
@@ -71,10 +92,10 @@ export default function SpaceBackground({
 
     return () => {
       if (spaceRef.current) {
-        spaceRef.current.stop();
+        spaceRef.current.destroy();
       }
     };
-  }, [particles, gradient, speed, size, opacity, connectionDistance, connectionOpacity, mouseInteraction, animateConnections, backgroundGradient]);
+  }, [particles, gradient, gradientTheme, speed, size, opacity, connectionDistance, connectionOpacity, mouseInteraction, animateConnections, backgroundGradient, responsive, retina, preset]);
 
   // Fallback background for when Space.js fails to load
   const createFallbackBackground = () => {
@@ -131,7 +152,11 @@ export default function SpaceBackground({
   );
 }
 
-// Preset configurations for different use cases
+// Re-export Space class for direct access
+import Space from '../lib/space.js';
+export { Space };
+
+// Legacy exports - use Space.presets and Space.gradients instead
 export const SpacePresets = {
   subtle: {
     particles: 50,
@@ -162,12 +187,14 @@ export const SpacePresets = {
   }
 };
 
-// Custom gradient presets
 export const GradientPresets = {
   vonix: ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#ef4444'],
   ocean: ['#0ea5e9', '#06b6d4', '#10b981', '#84cc16'],
   sunset: ['#f97316', '#ec4899', '#8b5cf6', '#3b82f6'],
   fire: ['#ef4444', '#f97316', '#eab308', '#84cc16'],
   cool: ['#06b6d4', '#3b82f6', '#8b5cf6', '#a855f7'],
-  warm: ['#f97316', '#ef4444', '#ec4899', '#f472b6']
+  warm: ['#f97316', '#ef4444', '#ec4899', '#f472b6'],
+  purple: ['#8b5cf6', '#a855f7', '#c084fc', '#e879f9'],
+  green: ['#10b981', '#34d399', '#6ee7b7', '#84cc16'],
+  blue: ['#3b82f6', '#60a5fa', '#93c5fd', '#dbeafe']
 };

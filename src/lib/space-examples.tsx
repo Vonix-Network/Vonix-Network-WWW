@@ -5,7 +5,7 @@
  * in your Vonix Network application.
  */
 
-import SpaceBackground, { SpacePresets, GradientPresets } from '../components/SpaceBackground';
+import SpaceBackground, { SpacePresets, GradientPresets, Space } from '../components/SpaceBackground';
 
 // Example 1: Basic usage with default Vonix gradient
 export function BasicSpaceExample() {
@@ -57,14 +57,27 @@ export function PresetSpaceExample() {
   );
 }
 
-// Example 4: Different gradient presets
+// Example 4: Using new gradient themes
 export function GradientPresetExample() {
   return (
     <div className="relative min-h-screen">
-      <SpaceBackground gradient={GradientPresets.ocean} />
+      <SpaceBackground gradientTheme="ocean" />
       <div className="relative z-10 p-8">
         <h1 className="text-white text-4xl font-bold">Ocean Theme</h1>
-        <p className="text-gray-300 mt-4">Using the ocean gradient preset.</p>
+        <p className="text-gray-300 mt-4">Using the new gradientTheme prop for easy theme switching.</p>
+      </div>
+    </div>
+  );
+}
+
+// Example 4b: Using presets with enhanced API
+export function PresetWithThemeExample() {
+  return (
+    <div className="relative min-h-screen">
+      <SpaceBackground preset="intense" gradientTheme="fire" />
+      <div className="relative z-10 p-8">
+        <h1 className="text-white text-4xl font-bold">Intense Fire Theme</h1>
+        <p className="text-gray-300 mt-4">Combining preset configuration with gradient theme.</p>
       </div>
     </div>
   );
@@ -114,19 +127,49 @@ export function OverlaySpaceExample() {
   );
 }
 
-// Example 7: Responsive space background
+// Example 7: Enhanced responsive space background
 export function ResponsiveSpaceExample() {
   return (
     <div className="relative min-h-screen">
       <SpaceBackground
-        className="md:opacity-100 opacity-50"
-        particles={window.innerWidth > 768 ? 200 : 100}
-        speed={window.innerWidth > 768 ? 0.8 : 0.3}
+        preset="medium"
+        gradientTheme="cool"
+        responsive={true}
+        retina={true}
+        className="md:opacity-100 opacity-75"
       />
       <div className="relative z-10 p-8">
-        <h1 className="text-white text-4xl font-bold">Responsive Space</h1>
+        <h1 className="text-white text-4xl font-bold">Enhanced Responsive Space</h1>
         <p className="text-gray-300 mt-4">
-          Different settings for mobile vs desktop.
+          Automatically adapts to screen size and pixel density with new responsive and retina options.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Example 7b: Performance optimized for mobile
+export function MobileOptimizedExample() {
+  return (
+    <div className="relative min-h-screen">
+      <SpaceBackground
+        preset="minimal"
+        gradientTheme="purple"
+        retina={false}
+        responsive={true}
+        className="md:hidden"
+      />
+      <SpaceBackground
+        preset="intense"
+        gradientTheme="vonix"
+        retina={true}
+        responsive={true}
+        className="hidden md:block"
+      />
+      <div className="relative z-10 p-8">
+        <h1 className="text-white text-4xl font-bold">Device-Optimized Space</h1>
+        <p className="text-gray-300 mt-4">
+          Different configurations for mobile and desktop for optimal performance.
         </p>
       </div>
     </div>

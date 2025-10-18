@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Key, Users, Shield, Database, Settings, BarChart3, Award, DollarSign, Crown } from 'lucide-react';
+import { Key, Users, Shield, Database, Settings, BarChart3, Award, DollarSign, Crown, Server } from 'lucide-react';
 
 export function AdminNavigation() {
   const navItems = [
@@ -17,6 +17,13 @@ export function AdminNavigation() {
       description: 'View and manage users',
       href: '/admin/users',
       icon: Users,
+      color: 'blue',
+    },
+    {
+      title: 'Server Management',
+      description: 'Manage Minecraft servers',
+      href: '/admin/servers',
+      icon: Server,
       color: 'blue',
     },
     {

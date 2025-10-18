@@ -1,4 +1,4 @@
-import { db, migrationReady } from '@/db';
+import { db } from '@/db';
 import { donations, users, siteSettings } from '@/db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { Heart, DollarSign, Bitcoin, CreditCard } from 'lucide-react';
@@ -9,8 +9,7 @@ import { Avatar } from '@/components/ui/avatar';
 export const revalidate = 300; // Revalidate every 5 minutes
 
 export default async function DonationsPage() {
-  // Ensure migrations (including site_settings) have run before querying
-  await migrationReady;
+  // Note: Database migrations should be handled by your deployment process
 
   // Get donation settings
   let settingsData: Array<{ value: string | null }> = [];

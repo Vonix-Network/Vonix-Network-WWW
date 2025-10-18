@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { servers } from '@/db/schema';
 import { getServerSession } from '@/lib/auth';
+import { fetchServerStatus, fetchMultipleServerStatuses, type ServerStatus } from '@/lib/server-status';
 
 // Force dynamic rendering - NO CACHING
 export const dynamic = 'force-dynamic';
@@ -19,12 +18,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const serverList = await db
-      .select()
-      .from(servers)
-      .orderBy(servers.orderIndex, servers.createdAt);
+    const { searchParams } = new URL(request.url);
+    const server = searchParams.get('server');
+    
+    if (!server) {
+      return NextResponse.json(
+        { error: 'Server parameter is required' },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json(serverList, {
+    // Check server status with no caching
+    const status = await fetchServerStatus(server);
+    
+    // Return with headers to prevent any caching
+    return NextResponse.json(status, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
@@ -33,9 +41,9 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching servers:', error);
+    console.error('Server status check error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch servers' },
+      { error: 'Failed to check server status' },
       { status: 500 }
     );
   }
@@ -53,32 +61,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, ipAddress, port, description, modpackName, bluemapUrl, curseforgeUrl, orderIndex } = body;
-
-    // Validate required fields
-    if (!name || !ipAddress) {
+    const { servers } = body;
+    
+    if (!servers || !Array.isArray(servers)) {
       return NextResponse.json(
-        { error: 'Name and IP address are required' },
+        { error: 'Servers array is required' },
         { status: 400 }
       );
     }
 
-    // Create new server
-    const [newServer] = await db
-      .insert(servers)
-      .values({
-        name,
-        ipAddress,
-        port: port || 25565,
-        description: description || null,
-        modpackName: modpackName || null,
-        bluemapUrl: bluemapUrl || null,
-        curseforgeUrl: curseforgeUrl || null,
-        orderIndex: orderIndex || 0,
-      })
-      .returning();
+    // Check multiple servers concurrently
+    const results = await fetchMultipleServerStatuses(servers);
 
-    return NextResponse.json(newServer, {
+    // Return with headers to prevent any caching
+    return NextResponse.json(results, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
@@ -87,10 +83,11 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error creating server:', error);
+    console.error('Bulk server status check error:', error);
     return NextResponse.json(
-      { error: 'Failed to create server' },
+      { error: 'Failed to check server statuses' },
       { status: 500 }
     );
   }
 }
+

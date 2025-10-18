@@ -1,9 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { DonationRank } from '@/db/schema';
 import { Plus, Edit, Trash2, Users, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Define types locally to avoid importing database schema on client-side
+interface DonationRank {
+  id: string;
+  name: string;
+  minAmount: number;
+  color: string;
+  textColor: string;
+  icon: string | null;
+  badge: string | null;
+  glow: boolean;
+  duration: number;
+  subtitle: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 interface DonorRank extends DonationRank {
   userCount: number;

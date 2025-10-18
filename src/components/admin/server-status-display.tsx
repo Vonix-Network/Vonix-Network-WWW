@@ -25,53 +25,64 @@ export function ServerStatusDisplay({ servers: initialServers }: ServerStatusDis
   useEffect(() => {
     // Update server statuses asynchronously after page loads
     const updateServerStatuses = async () => {
-      const updatedServers = await Promise.all(
-        initialServers.map(async (server) => {
-          // Set loading state immediately
-          setServerStatuses(prev =>
-            prev.map(s =>
-              s.id === server.id
-                ? { ...s, status: 'loading' as const }
-                : s
-            )
-          );
+      try {
+        // Set all servers to loading state
+        setServerStatuses(prev =>
+          prev.map(s => ({ ...s, status: 'loading' as const }))
+        );
 
-          try {
-            const serverAddress = server.port === 25565
-              ? server.ipAddress
-              : `${server.ipAddress}:${server.port}`;
+        // Prepare server addresses for bulk status check
+        const serverList = initialServers.map(server => ({
+          id: server.id,
+          address: server.port === 25565
+            ? server.ipAddress
+            : `${server.ipAddress}:${server.port}`,
+        }));
 
-            const response = await fetch(`https://api.mcstatus.io/v2/status/java/${serverAddress}`, {
-              cache: 'no-store',
-              headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-              },
-            });
+        // Call backend API to check all servers at once (avoids CORS)
+        const response = await fetch('/api/admin/servers/status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ servers: serverList.map(s => s.address) }),
+        });
 
-            if (response.ok) {
-              const data = await response.json();
+        if (response.ok) {
+          const results = await response.json();
+          
+          // Update server statuses with results
+          const updatedServers = initialServers.map((server, index) => {
+            const result = results[index];
+            if (result && result.online !== undefined) {
               return {
                 ...server,
-                status: data.online ? 'online' as const : 'offline' as const,
-                playersOnline: data.players?.online || 0,
-                playersMax: data.players?.max || 0,
-                version: data.version?.name_clean || null,
+                status: result.online ? 'online' as const : 'offline' as const,
+                playersOnline: result.players?.online || 0,
+                playersMax: result.players?.max || 0,
+                version: result.version?.name_clean || null,
               };
             }
-          } catch (error) {
-            console.error(`Failed to fetch status for ${server.name}:`, error);
-          }
+            return {
+              ...server,
+              status: 'offline' as const,
+            };
+          });
 
-          // Return offline if fetch fails
-          return {
-            ...server,
-            status: 'offline' as const,
-          };
-        })
-      );
-
-      setServerStatuses(updatedServers);
+          setServerStatuses(updatedServers);
+        } else {
+          // If API call fails, mark all as offline
+          setServerStatuses(prev =>
+            prev.map(s => ({ ...s, status: 'offline' as const }))
+          );
+        }
+      } catch (error) {
+        console.error('Failed to fetch server statuses:', error);
+        // Mark all as offline on error
+        setServerStatuses(prev =>
+          prev.map(s => ({ ...s, status: 'offline' as const }))
+        );
+      }
     };
 
     // Update statuses after a short delay to let page load first
