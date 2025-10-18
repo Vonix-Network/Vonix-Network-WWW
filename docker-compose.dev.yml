@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # Main application (development)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: vonix-app-dev
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      TURSO_DATABASE_URL: ${TURSO_DATABASE_URL}
+      TURSO_AUTH_TOKEN: ${TURSO_AUTH_TOKEN}
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: dev_secret_key_change_in_production
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID}
+      MINECRAFT_API_KEY: ${MINECRAFT_API_KEY}
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    restart: unless-stopped
+    command: npm run dev
+    depends_on:
+      - redis
+    networks:
+      - vonix-dev
+
+  # Redis for development
+  redis:
+    image: redis:7-alpine
+    container_name: vonix-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    networks:
+      - vonix-dev
+
+  # Discord bot service (development)
+  discord-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: vonix-discord-bot-dev
+    environment:
+      NODE_ENV: development
+      TURSO_DATABASE_URL: ${TURSO_DATABASE_URL}
+      TURSO_AUTH_TOKEN: ${TURSO_AUTH_TOKEN}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID}
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - .:/app
+      - /app/node_modules
+    restart: unless-stopped
+    command: npm run bot
+    depends_on:
+      - redis
+    profiles:
+      - bot
+    networks:
+      - vonix-dev
+
+  # Database studio (optional)
+  db-studio:
+    image: ghcr.io/drizzle-team/drizzle-studio:latest
+    container_name: vonix-db-studio
+    ports:
+      - "4983:4983"
+    environment:
+      DRIZZLE_DATABASE_URL: ${TURSO_DATABASE_URL}
+      DRIZZLE_AUTH_TOKEN: ${TURSO_AUTH_TOKEN}
+    profiles:
+      - db-studio
+    networks:
+      - vonix-dev
+
+volumes:
+  redis_dev_data:
+    driver: local
+
+networks:
+  vonix-dev:
+    driver: bridge
+

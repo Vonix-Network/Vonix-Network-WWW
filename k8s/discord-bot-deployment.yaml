@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vonix-discord-bot-deployment
+  namespace: vonix-network
+  labels:
+    app: vonix-discord-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vonix-discord-bot
+  template:
+    metadata:
+      labels:
+        app: vonix-discord-bot
+    spec:
+      containers:
+      - name: vonix-discord-bot
+        image: vonix/discord-bot:latest
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: vonix-config
+              key: NODE_ENV
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: vonix-config
+              key: LOG_LEVEL
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: vonix-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: vonix-config
+              key: REDIS_PORT
+        - name: TURSO_DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: vonix-secrets
+              key: TURSO_DATABASE_URL
+        - name: TURSO_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: vonix-secrets
+              key: TURSO_AUTH_TOKEN
+        - name: DISCORD_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: vonix-secrets
+              key: DISCORD_BOT_TOKEN
+        - name: DISCORD_CHANNEL_ID
+          valueFrom:
+            secretKeyRef:
+              name: vonix-secrets
+              key: DISCORD_CHANNEL_ID
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vonix-secrets
+              key: REDIS_PASSWORD
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          exec:
+            command:
+            - node
+            - -e
+            - "console.log('Bot health check')"
+          initialDelaySeconds: 30
+          periodSeconds: 60
+        volumeMounts:
+        - name: bot-logs
+          mountPath: /app/logs
+      volumes:
+      - name: bot-logs
+        emptyDir: {}
+      imagePullSecrets:
+      - name: registry-secret

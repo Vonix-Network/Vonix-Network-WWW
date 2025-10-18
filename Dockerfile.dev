@@ -1,0 +1,38 @@
+# Development Dockerfile for Vonix Network
+FROM node:20-alpine
+
+# Install dependencies for development
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install all dependencies (including dev dependencies)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Set permissions
+RUN chown -R nextjs:nodejs /app
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+# Labels
+LABEL maintainer="your.email@example.com"
+LABEL description="Vonix Network - Development Environment"
+LABEL version="2.0.0"
+
+# Default command for development
+CMD ["npm", "run", "dev"]
