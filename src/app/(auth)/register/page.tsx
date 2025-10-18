@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Gamepad2, Lock, KeyRound, ArrowRight, ArrowLeft, Sparkles, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import SpaceBackground from '@/components/SpaceBackground';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -70,12 +71,19 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4">
-      {/* Animated Background */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950/20 to-slate-950 animate-gradient-xy" />
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-      </div>
+      {/* Space.js Animated Background */}
+      <SpaceBackground 
+        particles={80}
+        speed={0.3}
+        gradient={['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#ef4444']}
+        size={{ min: 1, max: 2 }}
+        opacity={{ min: 0.05, max: 0.4 }}
+        connectionDistance={80}
+        connectionOpacity={0.1}
+        mouseInteraction={true}
+        animateConnections={true}
+        backgroundGradient={false}
+      />
 
       {/* Floating Decoration */}
       <div className="absolute top-20 left-20 opacity-10 float">

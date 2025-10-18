@@ -4,6 +4,7 @@ import { ArrowRight, Gamepad2, MessageSquare, Users, Shield, Sparkles, Zap } fro
 import { LiveChat } from '@/components/chat/LiveChat';
 import { getServerSession } from '@/lib/auth';
 import { PublicNav } from '@/components/public/nav';
+import SpaceBackground from '@/components/SpaceBackground';
 
 // Force dynamic rendering and disable all caching
 export const dynamic = 'force-dynamic';
@@ -14,12 +15,19 @@ export default async function HomePage() {
   
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950/20 to-slate-950 animate-gradient-xy" />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-      </div>
+      {/* Space.js Animated Background */}
+      <SpaceBackground 
+        particles={180}
+        speed={0.7}
+        gradient={['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#ef4444']}
+        size={{ min: 1.2, max: 4 }}
+        opacity={{ min: 0.12, max: 0.8 }}
+        connectionDistance={140}
+        connectionOpacity={0.25}
+        mouseInteraction={true}
+        animateConnections={true}
+        backgroundGradient={false}
+      />
 
       {/* Header */}
       <PublicNav user={session?.user ? { id: session.user.id, username: session.user.name || '', role: session.user.role || 'user' } : null} />

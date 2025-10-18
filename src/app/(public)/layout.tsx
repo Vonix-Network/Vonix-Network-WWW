@@ -1,5 +1,6 @@
 import { getServerSession } from '@/lib/auth';
 import { PublicNav } from '@/components/public/nav';
+import SpaceBackground from '@/components/SpaceBackground';
 
 // Force dynamic rendering - NO CACHING
 export const dynamic = 'force-dynamic';
@@ -22,12 +23,19 @@ export default async function PublicLayout({
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950/20 to-slate-950 animate-gradient-xy" />
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-      </div>
+      {/* Space.js Animated Background */}
+      <SpaceBackground 
+        particles={120}
+        speed={0.6}
+        gradient={['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#ef4444']}
+        size={{ min: 1, max: 3 }}
+        opacity={{ min: 0.1, max: 0.7 }}
+        connectionDistance={120}
+        connectionOpacity={0.2}
+        mouseInteraction={true}
+        animateConnections={true}
+        backgroundGradient={false}
+      />
 
       <PublicNav user={user} />
       <main className="container mx-auto px-4 py-8">
