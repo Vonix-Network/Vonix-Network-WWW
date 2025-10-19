@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { socialPosts, users } from '@/db/schema';
-import { desc, eq, count } from 'drizzle-orm';
+import { desc, eq, count, sql } from 'drizzle-orm';
 
 // Force dynamic rendering and disable all caching
 export const dynamic = 'force-dynamic';
@@ -18,39 +18,85 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // Always fetch fresh data - no caching
-      // Build the query based on sort order
-      let orderBy;
-      switch (sortBy) {
-        case 'popular':
-          orderBy = desc(socialPosts.createdAt); // TODO: Add likes count to social posts
-          break;
-        case 'trending':
-          orderBy = desc(socialPosts.createdAt); // TODO: Add trending algorithm
-          break;
-        default:
-          orderBy = desc(socialPosts.createdAt);
+      // Get posts with author information based on sort order
+      let posts;
+      
+      if (sortBy === 'popular') {
+        // Sort by likes count, then by creation date
+        posts = await db
+          .select({
+            id: socialPosts.id,
+            content: socialPosts.content,
+            imageUrl: socialPosts.imageUrl,
+            userId: socialPosts.userId,
+            likesCount: socialPosts.likesCount,
+            commentsCount: socialPosts.commentsCount,
+            createdAt: socialPosts.createdAt,
+            updatedAt: socialPosts.updatedAt,
+            author: {
+              id: users.id,
+              username: users.username,
+              avatar: users.avatar,
+            },
+          })
+          .from(socialPosts)
+          .leftJoin(users, eq(socialPosts.userId, users.id))
+          .orderBy(desc(socialPosts.likesCount), desc(socialPosts.createdAt))
+          .limit(limit)
+          .offset(offset);
+      } else if (sortBy === 'trending') {
+        // Trending algorithm: (likes + comments * 2) / age_in_hours
+        // Posts with more engagement and newer posts rank higher
+        posts = await db
+          .select({
+            id: socialPosts.id,
+            content: socialPosts.content,
+            imageUrl: socialPosts.imageUrl,
+            userId: socialPosts.userId,
+            likesCount: socialPosts.likesCount,
+            commentsCount: socialPosts.commentsCount,
+            createdAt: socialPosts.createdAt,
+            updatedAt: socialPosts.updatedAt,
+            author: {
+              id: users.id,
+              username: users.username,
+              avatar: users.avatar,
+            },
+          })
+          .from(socialPosts)
+          .leftJoin(users, eq(socialPosts.userId, users.id))
+          .orderBy(
+            sql`(
+              (${socialPosts.likesCount} + ${socialPosts.commentsCount} * 2) / 
+              (CAST((unixepoch() - ${socialPosts.createdAt}) AS REAL) / 3600.0 + 2)
+            ) DESC`
+          )
+          .limit(limit)
+          .offset(offset);
+      } else {
+        // Default: recent posts
+        posts = await db
+          .select({
+            id: socialPosts.id,
+            content: socialPosts.content,
+            imageUrl: socialPosts.imageUrl,
+            userId: socialPosts.userId,
+            likesCount: socialPosts.likesCount,
+            commentsCount: socialPosts.commentsCount,
+            createdAt: socialPosts.createdAt,
+            updatedAt: socialPosts.updatedAt,
+            author: {
+              id: users.id,
+              username: users.username,
+              avatar: users.avatar,
+            },
+          })
+          .from(socialPosts)
+          .leftJoin(users, eq(socialPosts.userId, users.id))
+          .orderBy(desc(socialPosts.createdAt))
+          .limit(limit)
+          .offset(offset);
       }
-
-      // Get posts with author information
-      const posts = await db
-        .select({
-          id: socialPosts.id,
-          content: socialPosts.content,
-          imageUrl: socialPosts.imageUrl,
-          userId: socialPosts.userId,
-          createdAt: socialPosts.createdAt,
-          updatedAt: socialPosts.updatedAt,
-          author: {
-            id: users.id,
-            username: users.username,
-            avatar: users.avatar,
-          },
-        })
-        .from(socialPosts)
-        .leftJoin(users, eq(socialPosts.userId, users.id))
-        .orderBy(orderBy)
-        .limit(limit)
-        .offset(offset);
 
       // Get total count for pagination
       const [{ total }] = await db

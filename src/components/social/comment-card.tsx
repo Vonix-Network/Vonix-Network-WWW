@@ -56,10 +56,11 @@ export function CommentCard({
   level = 0 
 }: CommentCardProps) {
   const { data: session } = useSession();
-  const [isLiked, setIsLiked] = useState(false); // TODO: Get actual like status
+  const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(comment.likesCount);
   const [donationRank, setDonationRank] = useState<DonationRank | null>(null);
   const [isLiking, setIsLiking] = useState(false);
+  const [isLoadingLikeStatus, setIsLoadingLikeStatus] = useState(true);
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
@@ -70,6 +71,24 @@ export function CommentCard({
   const [isUpdating, setIsUpdating] = useState(false);
 
   const isAuthor = currentUserId === comment.userId;
+
+  // Fetch like status if user is logged in
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetch(`/api/social/comments/${comment.id}/like/status`)
+        .then(res => res.json())
+        .then(data => {
+          setIsLiked(data.isLiked);
+          setIsLoadingLikeStatus(false);
+        })
+        .catch(err => {
+          console.error('Error fetching like status:', err);
+          setIsLoadingLikeStatus(false);
+        });
+    } else {
+      setIsLoadingLikeStatus(false);
+    }
+  }, [comment.id, session?.user?.id]);
 
   // Fetch donation rank if user has one
   useEffect(() => {

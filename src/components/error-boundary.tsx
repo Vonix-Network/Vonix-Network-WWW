@@ -37,8 +37,16 @@ export class ErrorBoundary extends Component<Props, State> {
     // Store error info in state
     this.setState({ errorInfo });
 
-    // TODO: Send to error tracking service (Sentry, LogRocket, etc.)
-    // Example: Sentry.captureException(error, { extra: errorInfo });
+    // Send to error tracking service
+    import('@/lib/error-tracking').then(({ captureException }) => {
+      captureException(error, {
+        tags: { type: 'error_boundary' },
+        extra: { 
+          componentStack: errorInfo?.componentStack,
+          errorInfo 
+        },
+      });
+    });
   }
 
   handleReset = () => {

@@ -243,8 +243,8 @@ npm start
 ## 📚 Documentation
 
 ### 🚀 Quick Start
-- **[Quick Reference](QUICK_REFERENCE.md)** - Fast command reference for daily tasks
 - **[Setup Guide](SetupGuide.md)** - Detailed setup instructions
+- **[Changelog](CHANGELOG.md)** - Version history and updates
 
 ### 📖 Guides
 - **[Features](docs/FEATURES.md)** - Complete feature list and status
@@ -252,14 +252,14 @@ npm start
 - **[Database Schema](docs/DATABASE.md)** - Database structure and migrations
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment strategies
 - **[Development History](docs/DEVELOPMENT_HISTORY.md)** - Implementation timeline and progress
+- **[Scripts Guide](docs/SCRIPTS.md)** - Available npm scripts and utilities
+- **[Space.js Guide](docs/SPACE_JS_GUIDE.md)** - Space.js animation library documentation
+- **[Beginner Guide](docs/BEGINNER_GUIDE.md)** - Getting started for new developers
 
 ### 🤝 Contributing
 - **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to the project
+- **[Contributors](CONTRIBUTORS.md)** - List of project contributors
 - **[Security Policy](SECURITY.md)** - Security guidelines and vulnerability reporting
-
-### 🔧 Technical Docs
-- **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Detailed implementation guide
-- **[Project Analysis](PROJECT_ANALYSIS.md)** - Project structure and analysis
 
 ## 🤝 Contributing
 

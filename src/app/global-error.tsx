@@ -12,7 +12,14 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error('Global error:', error);
-    // TODO: Send to error tracking service
+    
+    // Send to error tracking service
+    import('@/lib/error-tracking').then(({ captureException }) => {
+      captureException(error, {
+        tags: { type: 'global_error', critical: 'true' },
+        extra: { digest: error.digest },
+      });
+    });
   }, [error]);
 
   return (

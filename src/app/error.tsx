@@ -15,8 +15,13 @@ export default function Error({
     // Log error to console
     console.error('Page error:', error);
 
-    // TODO: Send to error tracking service
-    // Example: Sentry.captureException(error);
+    // Send to error tracking service
+    import('@/lib/error-tracking').then(({ captureException }) => {
+      captureException(error, {
+        tags: { type: 'page_error' },
+        extra: { digest: error.digest },
+      });
+    });
   }, [error]);
 
   return (
