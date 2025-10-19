@@ -8,6 +8,7 @@ import { RecentActivity } from '@/components/admin/recent-activity';
 import { QuickActions } from '@/components/admin/quick-actions';
 import { ServerStatusDisplay } from '@/components/admin/server-status-display';
 import { AdminNavigation } from '@/components/admin/admin-navigation';
+import BackgroundSelector from '@/components/admin/BackgroundSelector';
 import { Shield, Users, MessageSquare, FileText, Key, Server } from 'lucide-react';
 import { cachedExternalFetch } from '@/lib/connection-warmup';
 
@@ -195,6 +196,9 @@ async function AdminContent() {
 
       {/* Server Management - Now loads fast, status updates asynchronously */}
       <ServerStatusDisplay servers={serverListForClient} />
+
+      {/* Background Settings */}
+      <BackgroundSelector />
 
       {/* Main Content */}
       <div className="grid gap-6 lg:grid-cols-3">

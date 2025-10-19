@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { forumPosts, forumCategories, users } from '@/db/schema';
 import { handleError } from '@/lib/error-handler';
 import { desc, eq, count } from 'drizzle-orm';
+import { awardXP, XP_REWARDS, checkAchievements } from '@/lib/xp-system';
 
 // Force dynamic rendering and disable all caching
 export const dynamic = 'force-dynamic';
@@ -153,6 +154,28 @@ export async function POST(request: NextRequest) {
 
     // Update user engagement (non-blocking)
     import('@/lib/engagement').then(m => m.updateEngagement(parseInt(session.user.id), 'FORUM_POST')).catch(console.error);
+
+    // Award XP for creating forum post
+    const userId = parseInt(session.user.id);
+    try {
+      await awardXP(
+        userId,
+        XP_REWARDS.FORUM_POST_CREATE,
+        'forum_post_create',
+        post.id,
+        'Created a forum post'
+      );
+
+      // Check achievements
+      const postCount = await db
+        .select({ count: count() })
+        .from(forumPosts)
+        .where(eq(forumPosts.authorId, userId));
+      
+      await checkAchievements(userId, 'forum', Number(postCount[0]?.count || 0));
+    } catch (xpError) {
+      console.error('Error awarding XP for forum post:', xpError);
+    }
 
     return NextResponse.json({
       post,

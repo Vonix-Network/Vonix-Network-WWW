@@ -8,12 +8,27 @@
 
 A modern, full-stack Minecraft community platform built with Next.js 14, featuring real-time server status, integrated forums, social features, and comprehensive admin tools.
 
+---
+
+## 📚 Quick Links
+
+| For | Guide | Description |
+|-----|-------|-------------|
+| 🚀 **Getting Started** | [QUICKSTART.md](QUICKSTART.md) | 5-minute setup guide |
+| 🤖 **AI Assistants** | [AI_GUIDE.md](AI_GUIDE.md) | Complete codebase guide for AI |
+| ✅ **Validation** | [SETUP_CHECKLIST.md](SETUP_CHECKLIST.md) | Testing checklist |
+| 🗄️ **Database** | [src/db/README.md](src/db/README.md) | Database management |
+| 🎮 **XP System** | [docs/XP_INTEGRATION_GUIDE.md](docs/XP_INTEGRATION_GUIDE.md) | Leveling & achievements |
+
+---
+
 ## ✨ Features
 
 ### 🎯 Core Features
 - **Real-time Server Status** - Live Minecraft server monitoring with player counts
 - **Integrated Forums** - Full-featured discussion platform with categories and moderation
 - **Social Platform** - Community posts, comments, and engagement system
+- **XP & Leveling System** - Gamification with 100+ levels, achievements, and rewards
 - **Friend System** - Send requests, manage friends, real-time status updates
 - **Notifications** - Real-time alerts with notification bell and auto-refresh
 - **Blog System** - Admin-managed blog with rich content and SEO optimization
@@ -99,12 +114,16 @@ cp .env.example .env.local
 
 ### 4. Database Setup
 ```bash
-# Set up Turso database
-npm run db:push
-
-# Run migrations
-npm run db:migrate-all
+# Initialize complete database (one command!)
+npm run db:init
 ```
+
+This single command:
+- ✅ Creates all tables
+- ✅ Runs all migrations
+- ✅ Adds XP & Leveling system
+- ✅ Seeds achievements and rewards
+- ✅ Verifies integrity
 
 ### 5. Start Development Server
 ```bash
@@ -188,8 +207,29 @@ The application uses a comprehensive database schema with the following main tab
 - **social_posts** - Social platform posts
 - **donations** - Donation records
 - **donation_ranks** - Donation tier definitions
+- **xp_transactions** - XP gain/loss history
+- **achievements** - Achievement system (10 seeded)
+- **level_rewards** - Level milestone rewards
 
 See [DATABASE.md](docs/DATABASE.md) for detailed schema information.
+
+### Database Management
+
+```bash
+# Complete initialization (first-time setup)
+npm run db:init
+
+# Open visual database browser
+npm run db:studio
+
+# Generate migrations from schema changes
+npm run db:generate
+
+# Push schema changes directly
+npm run db:push
+```
+
+For detailed database documentation, see [src/db/README.md](src/db/README.md).
 
 ## 🚀 Deployment
 

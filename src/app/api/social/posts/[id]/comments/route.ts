@@ -3,8 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/db';
 import { socialComments, socialPosts, users, donationRanks } from '@/db/schema';
-import { eq, and, asc, desc } from 'drizzle-orm';
+import { eq, and, asc, desc, count } from 'drizzle-orm';
 import { z } from 'zod';
+import { awardXP, XP_REWARDS, checkAchievements } from '@/lib/xp-system';
 
 const createCommentSchema = z.object({
   content: z.string().min(1).max(2000),
@@ -89,6 +90,28 @@ export async function POST(
         parentCommentId: parent_comment_id || null,
       })
       .returning();
+
+    // Award XP for creating a comment
+    const userId = parseInt(session.user.id);
+    try {
+      await awardXP(
+        userId,
+        XP_REWARDS.COMMENT_CREATE,
+        'comment_create',
+        newComment.id,
+        'Created a comment'
+      );
+
+      // Check for comment-related achievements
+      const commentCount = await db
+        .select({ count: count() })
+        .from(socialComments)
+        .where(eq(socialComments.userId, userId));
+      
+      await checkAchievements(userId, 'comment', commentCount[0].count);
+    } catch (xpError) {
+      console.error('Error awarding XP for comment:', xpError);
+    }
 
     // Get the comment with author info
     const [commentWithAuthor] = await db

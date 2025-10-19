@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { Client, GatewayIntentBits, Message } from 'discord.js';
 import { db } from '../src/db';
 import { chatMessages } from '../src/db/schema';
-import { desc, sql } from 'drizzle-orm';
+import { desc, sql, inArray } from 'drizzle-orm';
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN || '';
 const CHANNEL_ID = process.env.DISCORD_CHANNEL_ID || '';
@@ -83,8 +83,8 @@ async function saveMessage(message: Message) {
       .orderBy(desc(chatMessages.timestamp));
 
     const idsToDelete = rows.slice(100).map((r) => r.id);
-    if (idsToDelete.length) {
-      await db.run(sql`delete from chat_messages where id in (${sql.join(idsToDelete)})`);
+    if (idsToDelete.length > 0) {
+      await db.delete(chatMessages).where(inArray(chatMessages.id, idsToDelete));
     }
   } catch (err) {
     console.error('Failed saving Discord message:', err);

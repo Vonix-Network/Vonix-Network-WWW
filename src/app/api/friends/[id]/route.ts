@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { friendships } from '@/db/schema';
 import { eq, and, or } from 'drizzle-orm';
 import { notifyFriendAccepted } from '@/lib/notifications';
+import { awardXP, XP_REWARDS } from '@/lib/xp-system';
 
 // PATCH /api/friends/[id] - Accept/reject friend request
 export async function PATCH(
@@ -55,6 +56,30 @@ export async function PATCH(
 
       // Notify the sender
       await notifyFriendAccepted(friendship.userId, session.user.name || 'Someone');
+
+      // Award XP to both users for making a friend
+      try {
+        // Award XP to the person who accepted
+        await awardXP(
+          userId,
+          XP_REWARDS.FRIEND_REQUEST_ACCEPTED,
+          'friend_accepted',
+          friendship.userId,
+          'Accepted friend request'
+        );
+
+        // Award XP to the person who sent the request
+        await awardXP(
+          friendship.userId,
+          XP_REWARDS.FRIEND_REQUEST_ACCEPTED,
+          'friend_accepted',
+          userId,
+          'Friend request accepted'
+        );
+      } catch (xpError) {
+        console.error('Error awarding friend XP:', xpError);
+        // Don't fail the request if XP fails
+      }
 
       return NextResponse.json(updated);
     } else if (action === 'block') {

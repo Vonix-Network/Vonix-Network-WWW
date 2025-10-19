@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Image, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { showLevelUpNotification } from '@/components/xp/level-up-toast';
 
 interface CreatePostFormProps {
   userId: number;
@@ -36,8 +37,18 @@ export function CreatePostForm({ userId }: CreatePostFormProps) {
         throw new Error(data.error || 'Failed to create post');
       }
 
-      toast.success('Post created!');
+      const data = await response.json();
+
+      toast.success('Post created! +15 XP');
       setContent('');
+
+      // Check for level-up and show notification
+      if (data.xp?.leveledUp) {
+        showLevelUpNotification({
+          newLevel: data.xp.newLevel,
+          xp: data.xp.totalXP,
+        });
+      }
       
       // Try to refresh the posts list if we're on the social page
       if ((window as any).refreshSocialPosts) {

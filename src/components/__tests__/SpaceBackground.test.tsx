@@ -4,6 +4,7 @@
  * Basic tests to ensure Space.js integration works correctly
  */
 
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import SpaceBackground from '../SpaceBackground';
 

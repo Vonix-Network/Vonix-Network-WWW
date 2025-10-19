@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { db } from '@/db';
-import { socialLikes } from '@/db/schema';
+import { socialLikes, socialPosts } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
+import { awardXP, XP_REWARDS } from '@/lib/xp-system';
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,6 +48,28 @@ export async function POST(request: NextRequest) {
         postId,
         userId,
       });
+
+      // Award XP to the post author (not the liker)
+      try {
+        const [post] = await db
+          .select({ userId: socialPosts.userId })
+          .from(socialPosts)
+          .where(eq(socialPosts.id, postId))
+          .limit(1);
+
+        if (post && post.userId !== userId) {
+          // Don't award XP for liking your own post
+          await awardXP(
+            post.userId,
+            XP_REWARDS.POST_LIKE,
+            'post_like_received',
+            postId,
+            'Received a like on your post'
+          );
+        }
+      } catch (xpError) {
+        console.error('Error awarding XP for like:', xpError);
+      }
 
       return NextResponse.json({ liked: true });
     }

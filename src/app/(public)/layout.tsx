@@ -1,6 +1,6 @@
 import { getServerSession } from '@/lib/auth';
 import { PublicNav } from '@/components/public/nav';
-import SpaceBackground from '@/components/SpaceBackground';
+import BackgroundWrapper from '@/components/backgrounds/BackgroundWrapper';
 
 // Force dynamic rendering - NO CACHING
 export const dynamic = 'force-dynamic';
@@ -23,19 +23,8 @@ export default async function PublicLayout({
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Space.js Animated Background */}
-      <SpaceBackground 
-        particles={120}
-        speed={0.6}
-        gradient={['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#ef4444']}
-        size={{ min: 1, max: 3 }}
-        opacity={{ min: 0.1, max: 0.7 }}
-        connectionDistance={120}
-        connectionOpacity={0.2}
-        mouseInteraction={true}
-        animateConnections={true}
-        backgroundGradient={false}
-      />
+      {/* Admin-Configurable Animated Background - Remounts on route change */}
+      <BackgroundWrapper />
 
       <PublicNav user={user} />
       <main className="container mx-auto px-4 py-8">

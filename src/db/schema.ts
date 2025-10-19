@@ -12,9 +12,15 @@ export const users = sqliteTable('users', {
   minecraftUuid: text('minecraft_uuid').unique(),
   avatar: text('avatar'),
   bio: text('bio'),
+  // Per-user UI preferences
+  preferredBackground: text('preferred_background'), // one of: 'space' | 'matrix' | 'data' | 'pixels' | 'neural' | 'none' (null = inherit site default)
   donationRankId: text('donation_rank_id').references(() => donationRanks.id, { onDelete: 'set null' }),
   rankExpiresAt: integer('rank_expires_at', { mode: 'timestamp' }),
   totalDonated: real('total_donated').default(0),
+  // XP and Leveling System
+  xp: integer('xp').default(0).notNull(),
+  level: integer('level').default(1).notNull(),
+  title: text('title'), // Custom title/rank earned through leveling
   createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
@@ -328,6 +334,64 @@ export const siteSettings = sqliteTable('site_settings', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
 
+// XP Transactions table (tracks all XP gains/losses)
+export const xpTransactions = sqliteTable('xp_transactions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  amount: integer('amount').notNull(), // Can be positive or negative
+  source: text('source').notNull(), // 'post_create', 'comment_create', 'forum_post', 'daily_login', etc.
+  sourceId: integer('source_id'), // ID of the related entity (post ID, comment ID, etc.)
+  description: text('description'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+});
+
+// Achievements table
+export const achievements = sqliteTable('achievements', {
+  id: text('id').primaryKey(), // e.g., 'first_post', 'level_10', 'social_butterfly'
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  icon: text('icon'), // Emoji or icon name
+  category: text('category', { enum: ['social', 'forum', 'leveling', 'special'] }).notNull(),
+  xpReward: integer('xp_reward').default(0).notNull(),
+  requirement: text('requirement').notNull(), // JSON string with requirement data
+  hidden: integer('hidden', { mode: 'boolean' }).default(false).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+});
+
+// User Achievements table (tracks which users have which achievements)
+export const userAchievements = sqliteTable('user_achievements', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  achievementId: text('achievement_id').notNull().references(() => achievements.id, { onDelete: 'cascade' }),
+  progress: integer('progress').default(0).notNull(), // For progressive achievements
+  completed: integer('completed', { mode: 'boolean' }).default(false).notNull(),
+  completedAt: integer('completed_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+});
+
+// Level Rewards table (defines rewards for reaching certain levels)
+export const levelRewards = sqliteTable('level_rewards', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  level: integer('level').notNull().unique(),
+  title: text('title'), // Special title/rank awarded at this level
+  badge: text('badge'), // Badge icon/emoji
+  description: text('description'),
+  rewardType: text('reward_type', { enum: ['title', 'badge', 'feature', 'currency'] }),
+  rewardValue: text('reward_value'), // JSON string with reward details
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+});
+
+// Daily Streaks table (tracks login streaks for bonus XP)
+export const dailyStreaks = sqliteTable('daily_streaks', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  currentStreak: integer('current_streak').default(0).notNull(),
+  longestStreak: integer('longest_streak').default(0).notNull(),
+  lastLoginDate: integer('last_login_date', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+});
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -352,3 +416,8 @@ export type Notification = typeof notifications.$inferSelect;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type ForumVote = typeof forumVotes.$inferSelect;
 export type UserEngagement = typeof userEngagement.$inferSelect;
+export type XpTransaction = typeof xpTransactions.$inferSelect;
+export type Achievement = typeof achievements.$inferSelect;
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type LevelReward = typeof levelRewards.$inferSelect;
+export type DailyStreak = typeof dailyStreaks.$inferSelect;

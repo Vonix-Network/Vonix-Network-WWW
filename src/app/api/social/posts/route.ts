@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { socialPosts, users } from '@/db/schema';
 import { desc, eq, count, sql } from 'drizzle-orm';
+import { awardXP, XP_REWARDS, checkAchievements } from '@/lib/xp-system';
 
 // Force dynamic rendering and disable all caching
 export const dynamic = 'force-dynamic';
@@ -148,18 +149,51 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Content too long (max 5000 characters)' }, { status: 400 });
     }
 
+    const userId = parseInt(session.user.id);
+    
     const [post] = await db
       .insert(socialPosts)
       .values({
-        userId: parseInt(session.user.id),
+        userId,
         content: content.trim(),
         imageUrl: imageUrl || null,
       })
       .returning();
 
+    // Award XP for creating a post
+    let xpData = null;
+    try {
+      const xpResult = await awardXP(
+        userId,
+        XP_REWARDS.POST_CREATE,
+        'post_create',
+        post.id,
+        'Created a social post'
+      );
+
+      xpData = {
+        awarded: true,
+        xpGained: XP_REWARDS.POST_CREATE,
+        totalXP: xpResult.newXP,
+        leveledUp: xpResult.leveledUp,
+        newLevel: xpResult.newLevel,
+      };
+
+      // Check for post-related achievements
+      const postCount = await db
+        .select({ count: count() })
+        .from(socialPosts)
+        .where(eq(socialPosts.userId, userId));
+      
+      await checkAchievements(userId, 'post', Number(postCount[0]?.count || 0));
+    } catch (xpError) {
+      console.error('Error awarding XP:', xpError);
+      // Don't fail the request if XP fails
+    }
+
     // No cache invalidation needed - always fresh data
 
-    return NextResponse.json({ post }, { status: 201 });
+    return NextResponse.json({ post, xp: xpData }, { status: 201 });
   } catch (error) {
     console.error('Error creating post:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

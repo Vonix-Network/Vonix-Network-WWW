@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/db';
 import { socialComments, socialCommentLikes } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { awardXP, XP_REWARDS } from '@/lib/xp-system';
 
 export async function POST(
   request: NextRequest,
@@ -30,6 +31,7 @@ export async function POST(
     const [comment] = await db
       .select({
         id: socialComments.id,
+        userId: socialComments.userId,
         likesCount: socialComments.likesCount,
       })
       .from(socialComments)
@@ -83,6 +85,22 @@ export async function POST(
 
       newLikesCount = comment.likesCount + 1;
       isLiked = true;
+
+      // Award XP to comment author (not the liker)
+      const currentUserId = parseInt(session.user.id);
+      if (comment.userId !== currentUserId) {
+        try {
+          await awardXP(
+            comment.userId,
+            XP_REWARDS.COMMENT_LIKE,
+            'comment_like_received',
+            commentId,
+            'Received a like on your comment'
+          );
+        } catch (xpError) {
+          console.error('Error awarding XP for comment like:', xpError);
+        }
+      }
     }
 
     // Update comment likes count

@@ -1,350 +1,319 @@
 import { Suspense } from 'react';
 import { db } from '@/db';
-import { users, userEngagement, donationRanks } from '@/db/schema';
-import { desc, eq, sql } from 'drizzle-orm';
-import { Trophy, TrendingUp, Award, Star, Medal } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { getUserAvatarWithSize } from '@/lib/utils/avatar';
+import { users } from '@/db/schema';
+import { desc } from 'drizzle-orm';
+import { Zap, Crown, Medal } from 'lucide-react';
+import { getTitleForLevel, getColorForLevel } from '@/lib/xp-utils';
 
-// Force dynamic rendering and disable all caching
+// Helper function to get user avatar (Minecraft head or fallback)
+function getUserAvatar(minecraftUsername?: string | null, avatar?: string | null, size: number = 64): string {
+  if (minecraftUsername) {
+    return `https://mc-heads.net/head/${minecraftUsername}/${size}`;
+  }
+  if (avatar) {
+    return avatar;
+  }
+  return `https://mc-heads.net/head/steve/${size}`;
+}
+
+// Inline XP Badge component for server-side rendering
+function LevelBadge({ level, levelColor, size = 'md' }: { level: number; levelColor: string; size?: 'sm' | 'md' | 'lg' }) {
+  const sizeClasses = {
+    sm: 'text-xs px-2 py-0.5',
+    md: 'text-sm px-3 py-1',
+    lg: 'text-base px-4 py-1.5',
+  };
+  
+  const iconSizes = {
+    sm: 'h-3 w-3',
+    md: 'h-4 w-4',
+    lg: 'h-5 w-5',
+  };
+  
+  return (
+    <div
+      className={`inline-flex items-center gap-1.5 rounded-full font-bold ${sizeClasses[size]}`}
+      style={{
+        backgroundColor: `${levelColor}20`,
+        color: levelColor,
+        border: `1.5px solid ${levelColor}60`,
+      }}
+    >
+      <Zap className={`${iconSizes[size]} fill-current`} />
+      <span>Lv. {level}</span>
+    </div>
+  );
+}
+
+// Force dynamic rendering
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-async function LeaderboardContent() {
-  // Get ALL users with their engagement (including 0 points)
+async function XPLeaderboardContent() {
+  // Get top 100 users by XP
   const leaderboard = await db
     .select({
-      userId: users.id,
+      id: users.id,
       username: users.username,
       minecraftUsername: users.minecraftUsername,
       avatar: users.avatar,
-      donationRankId: users.donationRankId,
-      totalPoints: sql<number>`COALESCE(${userEngagement.totalPoints}, 0)`,
-      postsCreated: sql<number>`COALESCE(${userEngagement.postsCreated}, 0)`,
-      commentsCreated: sql<number>`COALESCE(${userEngagement.commentsCreated}, 0)`,
-      forumPostsCreated: sql<number>`COALESCE(${userEngagement.forumPostsCreated}, 0)`,
-      forumRepliesCreated: sql<number>`COALESCE(${userEngagement.forumRepliesCreated}, 0)`,
-      upvotesReceived: sql<number>`COALESCE(${userEngagement.upvotesReceived}, 0)`,
-      likesReceived: sql<number>`COALESCE(${userEngagement.likesReceived}, 0)`,
+      xp: users.xp,
+      level: users.level,
+      title: users.title,
+      role: users.role,
     })
     .from(users)
-    .leftJoin(userEngagement, eq(users.id, userEngagement.userId))
-    .orderBy(desc(sql<number>`COALESCE(${userEngagement.totalPoints}, 0)`))
+    .orderBy(desc(users.xp))
     .limit(100);
 
-  // Separate top 3 for pedestal
-  const top3 = leaderboard.slice(0, 3);
-  const remaining = leaderboard.slice(3);
+  // Enhance with colors and titles
+  const enhancedLeaderboard = leaderboard.map((user, index) => ({
+    ...user,
+    rank: index + 1,
+    title: user.title || getTitleForLevel(user.level),
+    levelColor: getColorForLevel(user.level),
+  }));
 
-  // Get donation ranks for badge display
-  const ranks = await db.select().from(donationRanks);
-  const rankMap = new Map(ranks.map(r => [r.id, r]));
+  // Separate top 3 for podium
+  const top3 = enhancedLeaderboard.slice(0, 3);
+  const remaining = enhancedLeaderboard.slice(3);
+
+  // Rearrange top 3 for podium display (2nd, 1st, 3rd)
+  const podium = top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3;
 
   return (
-    <div className="max-w-7xl mx-auto fade-in-up">
-      {/* Header */}
-      <div className="glass border border-green-500/20 rounded-2xl p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-              <Trophy className="h-8 w-8 text-yellow-400" />
-              <span className="gradient-text">Leaderboard</span>
-            </h1>
-            <p className="text-gray-400">Top community members by engagement</p>
+    <div className="max-w-7xl mx-auto">
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-20 text-center relative">
+        <div className="fade-in-up">
+          <div className="inline-block mb-4 px-4 py-2 glass rounded-full border border-yellow-500/20">
+            <span className="text-sm text-yellow-400 font-medium">🏆 XP Rankings</span>
           </div>
-          <div className="hidden md:block">
-            <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-yellow-400" />
-              <span className="text-yellow-400 font-semibold">Live Rankings</span>
-            </div>
-          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            <span className="gradient-text-animated">Leaderboard</span>
+          </h1>
+          
+          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Top players ranked by experience points and level achievements
+          </p>
         </div>
-      </div>
+      </section>
 
-      {/* Info Card */}
-      <div className="glass border border-blue-500/20 rounded-2xl p-6 mb-6 bg-blue-500/5">
-        <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-          <Star className="h-5 w-5 text-blue-400" />
-          How Points Are Earned
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <span className="text-gray-400">Social Post:</span>
-            <span className="text-green-400 font-semibold ml-2">+5 pts</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Comment:</span>
-            <span className="text-green-400 font-semibold ml-2">+3 pts</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Forum Post:</span>
-            <span className="text-green-400 font-semibold ml-2">+10 pts</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Forum Reply:</span>
-            <span className="text-green-400 font-semibold ml-2">+5 pts</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Upvote Received:</span>
-            <span className="text-green-400 font-semibold ml-2">+2 pts</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Like Received:</span>
-            <span className="text-green-400 font-semibold ml-2">+1 pt</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Downvote Received:</span>
-            <span className="text-red-400 font-semibold ml-2">-1 pt</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Top 3 Podium */}
+      {/* Podium - Top 3 */}
       {top3.length > 0 && (
-        <div className="glass border border-yellow-500/20 rounded-2xl p-8 mb-6">
-          <h2 className="text-2xl font-bold text-center mb-6 flex items-center justify-center gap-2">
-            <Medal className="h-6 w-6 text-yellow-400" />
-            <span className="gradient-text">Top Champions</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* 2nd Place */}
-            {top3[1] && (
-              <div className="glass border border-gray-400/20 rounded-2xl p-6 text-center hover-lift order-2 md:order-1">
-                <div className="relative inline-block mb-4">
-                  <img
-                    src={getUserAvatarWithSize(top3[1].minecraftUsername, top3[1].avatar, 128, top3[1].username)}
-                    alt={top3[1].username || 'User'}
-                    className="w-24 h-24 rounded-full border-4 border-gray-400"
-                  />
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                    2
-                  </div>
-                </div>
-                <Link href={`/profile/${top3[1].username}`} className="hover:text-green-400 transition-colors">
-                  <h3 className="font-bold text-xl text-white mb-1">{top3[1].username}</h3>
-                </Link>
-                <p className="text-3xl font-bold text-gray-400 mb-2">{top3[1].totalPoints?.toLocaleString()}</p>
-                <p className="text-sm text-gray-500">points</p>
-                {top3[1].donationRankId && rankMap.has(top3[1].donationRankId) && (
-                  <div className="inline-block px-3 py-1 rounded-full text-xs font-semibold mt-2" style={{
-                    backgroundColor: rankMap.get(top3[1].donationRankId)!.color + '20',
-                    color: (rankMap.get(top3[1].donationRankId)!.textColor && rankMap.get(top3[1].donationRankId)!.textColor !== '#000000' && rankMap.get(top3[1].donationRankId)!.textColor !== '#000') ? rankMap.get(top3[1].donationRankId)!.textColor : '#ffffff',
-                    border: `1px solid ${rankMap.get(top3[1].donationRankId)!.color}40`,
-                  }}>
-                    {rankMap.get(top3[1].donationRankId)!.badge || rankMap.get(top3[1].donationRankId)!.name}
-                  </div>
-                )}
-              </div>
-            )}
+        <section className="container mx-auto px-4 py-10">
+          <div className="glass border border-yellow-500/20 rounded-2xl p-8 mb-8">
+            <h2 className="text-2xl font-bold text-white mb-8 text-center flex items-center justify-center gap-2">
+              <Crown className="h-6 w-6 text-yellow-400" />
+              Top Champions
+            </h2>
+            
+            <div className="grid grid-cols-3 gap-4 items-end max-w-4xl mx-auto">
+              {podium.map((user, index) => {
+                const actualRank = index === 0 ? 2 : index === 1 ? 1 : 3;
+                const heights = {
+                  1: 'min-h-[280px]',
+                  2: 'min-h-[220px]',
+                  3: 'min-h-[180px]',
+                };
+                const scales = {
+                  1: 'scale-105',
+                  2: 'scale-100',
+                  3: 'scale-95',
+                };
+                const medalColors = {
+                  1: 'text-yellow-400 border-yellow-500/50 bg-yellow-500/5',
+                  2: 'text-gray-400 border-gray-500/40 bg-gray-500/5',
+                  3: 'text-orange-400 border-orange-500/40 bg-orange-500/5',
+                };
+                
+                return (
+                  <div
+                    key={user.id}
+                    className={`${index === 1 ? 'order-2' : index === 0 ? 'order-1' : 'order-3'}`}
+                  >
+                    <div className={`glass border-2 ${medalColors[actualRank as keyof typeof medalColors]} rounded-2xl p-4 ${heights[actualRank as keyof typeof heights]} ${scales[actualRank as keyof typeof scales]} flex flex-col items-center justify-between hover-lift relative transition-all duration-200`}>
+                      {/* Rank Badge */}
+                      <div className={`absolute -top-4 ${medalColors[actualRank as keyof typeof medalColors]}`}>
+                        {actualRank === 1 && <Crown className="h-8 w-8" />}
+                        {actualRank === 2 && <Medal className="h-7 w-7" />}
+                        {actualRank === 3 && <Medal className="h-6 w-6" />}
+                      </div>
 
-            {/* 1st Place */}
-            <div className="glass border border-yellow-400/30 rounded-2xl p-6 text-center hover-lift glow-yellow order-1 md:order-2 md:scale-105">
-              <div className="relative inline-block mb-4">
-                <img
-                  src={getUserAvatarWithSize(top3[0].minecraftUsername, top3[0].avatar, 128, top3[0].username)}
-                  alt={top3[0].username || 'User'}
-                  className="w-28 h-28 rounded-full border-4 border-yellow-400"
-                />
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                  1
-                </div>
-                <div className="absolute -top-3 -right-3 w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center animate-pulse">
-                  <Trophy className="h-6 w-6 text-white" />
-                </div>
-              </div>
-              <Link href={`/profile/${top3[0].username}`} className="hover:text-green-400 transition-colors">
-                <h3 className="font-bold text-2xl text-white mb-1">{top3[0].username}</h3>
-              </Link>
-              <p className="text-4xl font-bold text-yellow-400 mb-2">{top3[0].totalPoints?.toLocaleString()}</p>
-              <p className="text-sm text-gray-500">points</p>
-              {top3[0].donationRankId && rankMap.has(top3[0].donationRankId) && (
-                <div className="inline-block px-3 py-1 rounded-full text-xs font-semibold mt-2" style={{
-                  backgroundColor: rankMap.get(top3[0].donationRankId)!.color + '20',
-                  color: (rankMap.get(top3[0].donationRankId)!.textColor && rankMap.get(top3[0].donationRankId)!.textColor !== '#000000' && rankMap.get(top3[0].donationRankId)!.textColor !== '#000') ? rankMap.get(top3[0].donationRankId)!.textColor : '#ffffff',
-                  border: `1px solid ${rankMap.get(top3[0].donationRankId)!.color}40`,
-                }}>
-                  {rankMap.get(top3[0].donationRankId)!.badge || rankMap.get(top3[0].donationRankId)!.name}
-                </div>
-              )}
+                      {/* Top Section */}
+                      <div className="flex flex-col items-center pt-6">
+                        {/* Avatar */}
+                        <div className="relative mb-3">
+                          <img
+                            src={getUserAvatar(user.minecraftUsername, user.avatar, actualRank === 1 ? 128 : 96)}
+                            alt={user.username}
+                            className={`${actualRank === 1 ? 'w-24 h-24' : 'w-20 h-20'} rounded-lg border-4 pixelated`}
+                            style={{ borderColor: user.levelColor }}
+                          />
+                        </div>
+
+                        {/* User Info */}
+                        <h3 className={`${actualRank === 1 ? 'text-xl' : 'text-lg'} font-bold text-white mb-1`}>
+                          {user.username}
+                        </h3>
+                        <p className="text-sm text-gray-400 mb-2">{user.title}</p>
+                      </div>
+
+                      {/* Bottom Section */}
+                      <div className="flex flex-col items-center gap-2 pb-2">
+                        {/* Level Badge */}
+                        <LevelBadge
+                          level={user.level}
+                          levelColor={user.levelColor}
+                          size={actualRank === 1 ? 'lg' : 'md'}
+                        />
+
+                        {/* XP */}
+                        <div className="text-center">
+                          <div className={`${actualRank === 1 ? 'text-3xl' : 'text-2xl'} font-bold`} style={{ color: user.levelColor }}>
+                            {user.xp.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-500">Total XP</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-
-            {/* 3rd Place */}
-            {top3[2] && (
-              <div className="glass border border-orange-400/20 rounded-2xl p-6 text-center hover-lift order-3">
-                <div className="relative inline-block mb-4">
-                  <img
-                    src={getUserAvatarWithSize(top3[2].minecraftUsername, top3[2].avatar, 128, top3[2].username)}
-                    alt={top3[2].username || 'User'}
-                    className="w-24 h-24 rounded-full border-4 border-orange-400"
-                  />
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                    3
-                  </div>
-                </div>
-                <Link href={`/profile/${top3[2].username}`} className="hover:text-green-400 transition-colors">
-                  <h3 className="font-bold text-xl text-white mb-1">{top3[2].username}</h3>
-                </Link>
-                <p className="text-3xl font-bold text-orange-400 mb-2">{top3[2].totalPoints?.toLocaleString()}</p>
-                <p className="text-sm text-gray-500">points</p>
-                {top3[2].donationRankId && rankMap.has(top3[2].donationRankId) && (
-                  <div className="inline-block px-3 py-1 rounded-full text-xs font-semibold mt-2" style={{
-                    backgroundColor: rankMap.get(top3[2].donationRankId)!.color + '20',
-                    color: (rankMap.get(top3[2].donationRankId)!.textColor && rankMap.get(top3[2].donationRankId)!.textColor !== '#000000' && rankMap.get(top3[2].donationRankId)!.textColor !== '#000') ? rankMap.get(top3[2].donationRankId)!.textColor : '#ffffff',
-                    border: `1px solid ${rankMap.get(top3[2].donationRankId)!.color}40`,
-                  }}>
-                    {rankMap.get(top3[2].donationRankId)!.badge || rankMap.get(top3[2].donationRankId)!.name}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Full Leaderboard */}
-      <div className="glass border border-green-500/20 rounded-2xl overflow-hidden">
-        <div className="p-6 border-b border-white/10">
-          <h2 className="text-2xl font-bold">
-            <span className="gradient-text">Full Rankings</span>
-          </h2>
-        </div>
+      {/* Rest of Leaderboard */}
+      <section className="container mx-auto px-4 py-10">
+        <div className="glass border border-purple-500/20 rounded-2xl overflow-hidden">
+          <div className="p-6 border-b border-white/10">
+            <h2 className="text-2xl font-bold">
+              <span className="gradient-text">Rankings</span>
+            </h2>
+          </div>
 
-        <div className="divide-y divide-white/10">
-          {leaderboard.map((user, index) => (
-            <div
-              key={user.userId}
-              className="p-4 hover:bg-white/5 transition-colors flex items-center gap-4"
-            >
-              {/* Rank */}
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg ${
-                index === 0 ? 'bg-yellow-500/20 text-yellow-400' :
-                index === 1 ? 'bg-gray-400/20 text-gray-400' :
-                index === 2 ? 'bg-orange-400/20 text-orange-400' :
-                'bg-slate-800 text-gray-400'
-              }`}>
-                #{index + 1}
-              </div>
-
-              {/* Avatar */}
-              <img
-                src={getUserAvatarWithSize(user.minecraftUsername, user.avatar, 64, user.username)}
-                alt={user.username || 'User'}
-                className="w-12 h-12 rounded-full border-2 border-green-500/30"
-              />
-
-              {/* User Info */}
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={`/profile/${user.username}`}
-                    className="font-semibold hover:text-green-400 transition-colors"
-                    style={{
-                      color: user.donationRankId && rankMap.has(user.donationRankId)
-                        ? (rankMap.get(user.donationRankId)!.textColor !== '#000000' && rankMap.get(user.donationRankId)!.textColor !== '#000'
-                          ? rankMap.get(user.donationRankId)!.textColor
-                          : '#ffffff')
-                        : '#ffffff'
-                    }}
-                  >
-                    {user.username}
-                  </Link>
-                  {user.donationRankId && rankMap.has(user.donationRankId) && (
-                    <span className="px-2 py-0.5 rounded text-xs font-semibold" style={{
-                      backgroundColor: rankMap.get(user.donationRankId)!.color + '20',
-                      color: (rankMap.get(user.donationRankId)!.textColor && rankMap.get(user.donationRankId)!.textColor !== '#000000' && rankMap.get(user.donationRankId)!.textColor !== '#000') ? rankMap.get(user.donationRankId)!.textColor : '#ffffff',
-                      border: `1px solid ${rankMap.get(user.donationRankId)!.color}40`,
-                    }}>
-                      {rankMap.get(user.donationRankId)!.badge || rankMap.get(user.donationRankId)!.name}
+          <div className="divide-y divide-white/10">
+            {remaining.map((user) => (
+              <div
+                key={user.id}
+                className="p-6 hover:bg-white/5 transition-colors flex items-center justify-between"
+              >
+                <div className="flex items-center gap-4 flex-1">
+                  {/* Rank */}
+                  <div className="w-12 text-center">
+                    <span className="text-2xl font-bold text-gray-400">
+                      #{user.rank}
                     </span>
-                  )}
-                </div>
-                <div className="text-sm text-gray-400 flex gap-4 mt-1">
-                  <span>{user.forumPostsCreated} forum posts</span>
-                  <span>{user.postsCreated} social posts</span>
-                  <span>{user.upvotesReceived} upvotes</span>
-                </div>
-              </div>
+                  </div>
 
-              {/* Points */}
-              <div className="text-right">
-                <div className="text-2xl font-bold text-green-400">
-                  {user.totalPoints?.toLocaleString()}
+                  {/* Avatar */}
+                  <img
+                    src={getUserAvatar(user.minecraftUsername, user.avatar, 64)}
+                    alt={user.username}
+                    className="w-14 h-14 rounded-lg border-2 pixelated"
+                    style={{ borderColor: user.levelColor }}
+                  />
+
+                  {/* User Info */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="text-lg font-bold text-white">
+                        {user.username}
+                      </h3>
+                      <LevelBadge
+                        level={user.level}
+                        levelColor={user.levelColor}
+                        size="sm"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-400">{user.title}</p>
+                  </div>
+
+                  {/* XP */}
+                  <div className="text-right">
+                    <div className="text-2xl font-bold" style={{ color: user.levelColor }}>
+                      {user.xp.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500">Total XP</div>
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500">points</div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* Info Section */}
+      <section className="container mx-auto px-4 py-10">
+        <div className="glass border border-blue-500/20 rounded-2xl p-6 bg-blue-500/5">
+          <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+            <Zap className="h-5 w-5 text-blue-400" />
+            How to Earn XP
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="text-gray-400">Create Post:</span>
+              <span className="text-green-400 font-semibold ml-2">+15 XP</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Write Comment:</span>
+              <span className="text-green-400 font-semibold ml-2">+5 XP</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Forum Post:</span>
+              <span className="text-green-400 font-semibold ml-2">+20 XP</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Daily Login:</span>
+              <span className="text-green-400 font-semibold ml-2">+5 XP</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Get Post Like:</span>
+              <span className="text-green-400 font-semibold ml-2">+2 XP</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Forum Reply:</span>
+              <span className="text-green-400 font-semibold ml-2">+10 XP</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Friend Accepted:</span>
+              <span className="text-green-400 font-semibold ml-2">+10 XP</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Streak Bonus:</span>
+              <span className="text-green-400 font-semibold ml-2">+2-50 XP</span>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
 function LeaderboardSkeleton() {
   return (
-    <div className="max-w-7xl mx-auto fade-in-up">
-      {/* Header Skeleton */}
-      <div className="glass border border-green-500/20 rounded-2xl p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="h-10 w-48 bg-gray-700 rounded animate-pulse mb-2" />
-            <div className="h-6 w-64 bg-gray-700 rounded animate-pulse" />
-          </div>
-          <div className="hidden md:block">
-            <div className="h-8 w-32 bg-gray-700 rounded animate-pulse" />
-          </div>
-        </div>
-      </div>
-
-      {/* Info Card Skeleton */}
-      <div className="glass border border-blue-500/20 rounded-2xl p-6 mb-6 bg-blue-500/5">
-        <div className="h-6 w-40 bg-gray-700 rounded animate-pulse mb-4" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...Array(7)].map((_, i) => (
-            <div key={i} className="space-y-2">
-              <div className="h-4 w-24 bg-gray-700 rounded animate-pulse" />
-              <div className="h-4 w-16 bg-gray-700 rounded animate-pulse" />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Top 3 Podium Skeleton */}
-      <div className="glass border border-yellow-500/20 rounded-2xl p-8 mb-6">
-        <div className="h-8 w-48 bg-gray-700 rounded animate-pulse mx-auto mb-6" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="glass border border-gray-500/20 rounded-2xl p-6 text-center">
-              <div className="w-24 h-24 bg-gray-700 rounded-full mx-auto mb-4 animate-pulse" />
-              <div className="h-6 w-20 bg-gray-700 rounded animate-pulse mx-auto mb-2" />
-              <div className="h-8 w-16 bg-gray-700 rounded animate-pulse mx-auto mb-2" />
-              <div className="h-4 w-12 bg-gray-700 rounded animate-pulse mx-auto" />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Full Leaderboard Skeleton */}
-      <div className="glass border border-green-500/20 rounded-2xl overflow-hidden">
-        <div className="p-6 border-b border-white/10">
-          <div className="h-8 w-32 bg-gray-700 rounded animate-pulse" />
-        </div>
-
-        <div className="divide-y divide-white/10">
+    <div className="max-w-7xl mx-auto">
+      <section className="container mx-auto px-4 py-20 text-center">
+        <div className="h-12 w-64 bg-gray-700 rounded-full animate-pulse mx-auto mb-6" />
+        <div className="h-16 w-96 bg-gray-700 rounded animate-pulse mx-auto" />
+      </section>
+      <section className="container mx-auto px-4 py-10">
+        <div className="glass border border-purple-500/20 rounded-2xl p-8">
           {[...Array(10)].map((_, i) => (
-            <div key={i} className="p-4 flex items-center gap-4">
-              <div className="w-12 h-12 bg-gray-700 rounded-lg animate-pulse" />
-              <div className="w-12 h-12 bg-gray-700 rounded-full animate-pulse" />
+            <div key={i} className="flex items-center gap-4 py-4">
+              <div className="w-12 h-8 bg-gray-700 rounded animate-pulse" />
+              <div className="w-14 h-14 bg-gray-700 rounded-full animate-pulse" />
               <div className="flex-1 space-y-2">
-                <div className="h-5 w-32 bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 w-48 bg-gray-700 rounded animate-pulse" />
+                <div className="h-6 w-32 bg-gray-700 rounded animate-pulse" />
+                <div className="h-4 w-24 bg-gray-700 rounded animate-pulse" />
               </div>
-              <div className="w-20 h-8 bg-gray-700 rounded animate-pulse" />
             </div>
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
@@ -352,7 +321,8 @@ function LeaderboardSkeleton() {
 export default function LeaderboardPage() {
   return (
     <Suspense fallback={<LeaderboardSkeleton />}>
-      <LeaderboardContent />
+      <XPLeaderboardContent />
     </Suspense>
   );
 }
+

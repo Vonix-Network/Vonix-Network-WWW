@@ -9,6 +9,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from '@/lib/query-client';
 import { useEffect } from 'react';
 import { performanceMonitor } from '@/lib/performance';
+import { DailyLoginChecker } from '@/components/xp/daily-login-checker';
+import NavigationProgress from '@/components/NavigationProgress';
 
 // Create a wrapper component to handle QueryClient setup
 function QueryProvider({ children }: { children: React.ReactNode }) {
@@ -49,6 +51,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
         <WebSocketProvider>
           <QueryProvider>
+            <NavigationProgress />
+            <DailyLoginChecker />
             {children}
             <Toaster position="top-right" richColors />
           </QueryProvider>

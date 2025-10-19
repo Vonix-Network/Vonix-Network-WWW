@@ -24,6 +24,9 @@ export interface UserWithRank {
   totalDonated: number;
   donationRankId: string | null;
   rankExpiresAt: number | null;
+  xp?: number;
+  level?: number;
+  title?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -457,9 +460,13 @@ export default function UserRanksPage() {
             minecraftUuid: null,
             avatar: null,
             bio: null,
+            preferredBackground: null,
             donationRankId: editingUser.donationRankId,
             rankExpiresAt: editingUser.rankExpiresAt ? new Date(editingUser.rankExpiresAt) : null,
             totalDonated: editingUser.totalDonated,
+            xp: editingUser.xp || 0,
+            level: editingUser.level || 1,
+            title: editingUser.title || null,
             createdAt: new Date(editingUser.createdAt),
             updatedAt: new Date(editingUser.updatedAt),
           }}

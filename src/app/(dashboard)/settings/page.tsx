@@ -5,6 +5,7 @@ import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { ProfileSettings } from '@/components/settings/profile-settings';
 import { AccountSettings } from '@/components/settings/account-settings';
+import UserBackgroundSelector from '@/components/settings/UserBackgroundSelector';
 import { Settings as SettingsIcon } from 'lucide-react';
 
 export const revalidate = 300; // Revalidate every 5 minutes
@@ -32,6 +33,9 @@ async function SettingsContent({ session }: { session: any }) {
 
       {/* Account Settings */}
       <AccountSettings user={user} />
+
+      {/* Background Preference */}
+      <UserBackgroundSelector />
     </div>
   );
 }
