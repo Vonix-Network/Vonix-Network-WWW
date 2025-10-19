@@ -25,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatTimeAgo } from '@/lib/date-utils';
+import { AddFriendButton } from '@/components/friends/add-friend-button';
 
 interface ProfilePageProps {
   params: { username: string };
@@ -378,6 +379,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   <CardTitle>Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
+                  <AddFriendButton userId={user.id} username={user.username} />
                   <Link
                     href={`/messages/new?to=${user.username}`}
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg transition-colors"

@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { socialPosts, forumPosts, privateMessages, users, donationRanks } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { socialPosts, forumPosts, privateMessages, users, donationRanks, friendships } from '@/db/schema';
+import { eq, and, or, sql } from 'drizzle-orm';
 import { Users, MessageSquare, FileText, Mail, Crown, Calendar } from 'lucide-react';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -48,6 +48,20 @@ export async function DashboardStats({ session }: DashboardStatsProps) {
       .where(eq(donationRanks.id, userData.donationRankId));
     userRank = rank;
   }
+
+  // Get friend count
+  const [friendCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(friendships)
+    .where(
+      and(
+        or(
+          eq(friendships.userId, parseInt(session.user.id)),
+          eq(friendships.friendId, parseInt(session.user.id))
+        ),
+        eq(friendships.status, 'accepted')
+      )
+    );
 
   return (
     <>
@@ -103,7 +117,7 @@ export async function DashboardStats({ session }: DashboardStatsProps) {
         />
         <StatCard
           title="Friends"
-          value={0}
+          value={friendCount?.count || 0}
           icon={<Users className="h-6 w-6" />}
           link="/friends"
         />

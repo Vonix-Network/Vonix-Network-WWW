@@ -20,6 +20,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 
 interface NavProps {
   user: {
@@ -86,10 +87,7 @@ export function DashboardNav({ user }: NavProps) {
 
             {/* Desktop Right Side */}
             <div className="hidden md:flex items-center gap-2">
-              <button className="relative p-2 text-gray-400 hover:text-cyan-400 transition-colors rounded-lg hover:bg-white/5">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-              </button>
+              <NotificationBell />
 
               {isModerator && (
                 <div className="relative group">

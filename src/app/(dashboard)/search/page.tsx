@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Search, Users, FileText, MessageSquare, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { formatTimeAgo } from '@/lib/date-utils';
+import { AddFriendButton } from '@/components/friends/add-friend-button';
+import { useSession } from 'next-auth/react';
 
 interface SearchResult {
   type: 'user' | 'post' | 'forum';
@@ -16,6 +18,7 @@ interface SearchResult {
 }
 
 export default function SearchPage() {
+  const { data: session } = useSession();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -119,17 +122,18 @@ export default function SearchPage() {
           </div>
         ) : (
           results.map((result) => (
-            <Link
+            <div
               key={`${result.type}-${result.id}`}
-              href={result.link}
-              className="block glass border border-green-500/10 hover:border-green-500/30 rounded-xl p-4 transition-all hover-lift"
+              className="glass border border-green-500/10 rounded-xl p-4 transition-all"
             >
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-white/5">
                   {getIcon(result.type)}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-white mb-1">{result.title}</h3>
+                  <Link href={result.link} className="hover:text-green-400 transition-colors">
+                    <h3 className="font-semibold text-white mb-1">{result.title}</h3>
+                  </Link>
                   <p className="text-sm text-gray-400 line-clamp-2">{result.description}</p>
                   {result.timestamp && (
                     <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
@@ -139,8 +143,14 @@ export default function SearchPage() {
                     </div>
                   )}
                 </div>
+                {/* Add Friend button for user results */}
+                {result.type === 'user' && session && session.user.id !== result.id.toString() && (
+                  <div className="flex-shrink-0">
+                    <AddFriendButton userId={result.id} username={result.title} variant="compact" />
+                  </div>
+                )}
               </div>
-            </Link>
+            </div>
           ))
         )}
       </div>
