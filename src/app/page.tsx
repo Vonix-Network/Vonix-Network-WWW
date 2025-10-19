@@ -133,11 +133,11 @@ export default async function HomePage() {
 
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-20 text-center relative">
-        <div className="relative glass border border-green-500/20 rounded-3xl p-12 md:p-16 overflow-hidden hover-lift">
+        <div className="relative glass border border-purple-500/20 rounded-3xl p-12 md:p-16 overflow-hidden hover-lift">
           {/* Background Glow */}
-          <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-emerald-500/10" />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-pink-500/10" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl" />
           
           <div className="relative z-10">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">Ready to Join?</h2>

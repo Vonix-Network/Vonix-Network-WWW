@@ -26,6 +26,14 @@ pnpm-debug.log*
 .env*
 !.env*.example
 
+# development documentation (keep only essential docs in repo)
+BUGFIX_*.md
+COMMIT_READY.md
+FIXES_COMMIT.md
+*_PROGRESS.md
+*_COMPLETE.md
+FINAL_SUMMARY*.md
+
 # next.js
 .next
 .next/static/chunks

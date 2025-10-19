@@ -134,10 +134,10 @@ async function RanksContent() {
                   {/* CTA Button */}
                   <a
                     href="#donate"
-                    className="block w-full py-3 rounded-lg font-medium text-center transition-all"
+                    className="block w-full py-3 rounded-lg font-medium text-center transition-all hover:opacity-90"
                     style={{
                       backgroundColor: rank.color,
-                      color: rank.textColor,
+                      color: '#ffffff',
                     }}
                   >
                     Get {rank.name}

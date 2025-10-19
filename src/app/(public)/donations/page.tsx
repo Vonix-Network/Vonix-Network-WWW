@@ -239,25 +239,31 @@ export default async function DonationsPage() {
 
         {/* CTA */}
         <section className="text-center py-20">
-          <div className="glass border border-pink-500/20 rounded-3xl p-12 hover-lift">
-            <Heart className="h-16 w-16 text-pink-400 mx-auto mb-6" />
-            <h2 className="text-4xl font-bold text-white mb-4">Every Contribution Matters</h2>
-            <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
-              Your support helps us maintain servers, develop new features, and grow our community.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/ranks"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold hover-lift"
-              >
-                View Donor Ranks
-              </Link>
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2 px-8 py-4 glass border border-pink-500/30 text-white rounded-xl font-medium hover:border-pink-500/50 transition-all"
-              >
-                Back to Home
-              </Link>
+          <div className="relative glass border border-purple-500/20 rounded-3xl p-12 hover-lift overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-pink-500/10" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl" />
+            
+            <div className="relative z-10">
+              <Heart className="h-16 w-16 text-pink-400 mx-auto mb-6" />
+              <h2 className="text-4xl font-bold text-white mb-4">Every Contribution Matters</h2>
+              <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+                Your support helps us maintain servers, develop new features, and grow our community.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href="/ranks"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold hover-lift"
+                >
+                  View Donor Ranks
+                </Link>
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-2 px-8 py-4 glass border border-pink-500/30 text-white rounded-xl font-medium hover:border-pink-500/50 transition-all"
+                >
+                  Back to Home
+                </Link>
+              </div>
             </div>
           </div>
         </section>
