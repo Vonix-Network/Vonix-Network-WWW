@@ -122,8 +122,16 @@ export default function BackgroundManager({
       return (
         <SpaceBackground
           className={className}
-          preset="medium"
-          gradientTheme="vonix"
+          particles={180}
+          speed={0.7}
+          gradient={['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#ef4444']}
+          size={{ min: 1.2, max: 4 }}
+          opacity={{ min: 0.12, max: 0.8 }}
+          connectionDistance={140}
+          connectionOpacity={0.25}
+          mouseInteraction={true}
+          animateConnections={true}
+          backgroundGradient={false}
         />
       );
   }

@@ -159,7 +159,9 @@ function parseBBCode(input: string): BBCodeNode[] {
 // Render BBCode nodes to React elements
 function renderBBCodeNode(node: BBCodeNode, index: number): React.ReactNode {
   if (node.type === 'text') {
-    return <span key={index} dangerouslySetInnerHTML={{ __html: sanitizeText(node.content) }} />;
+    // Convert newlines to <br> tags for proper line breaks
+    const textWithBreaks = sanitizeText(node.content).replace(/\n/g, '<br />');
+    return <span key={index} dangerouslySetInnerHTML={{ __html: textWithBreaks }} />;
   }
   
   const { tag, attributes, children } = node;
@@ -337,16 +339,17 @@ export function BBCode({ children, className = '' }: BBCodeProps) {
     const elements = nodes.map((node, index) => renderBBCodeNode(node, index));
     
     return (
-      <div className={`bbcode-content ${className}`}>
+      <div className={`bbcode-content break-words whitespace-normal ${className}`}>
         {elements}
       </div>
     );
   } catch (error) {
     console.error('BBCode parsing error:', error);
     // Fallback to plain text if parsing fails
+    const textWithBreaks = sanitizeText(children).replace(/\n/g, '<br />');
     return (
       <div className={className}>
-        <span dangerouslySetInnerHTML={{ __html: sanitizeText(children) }} />
+        <span dangerouslySetInnerHTML={{ __html: textWithBreaks }} />
       </div>
     );
   }

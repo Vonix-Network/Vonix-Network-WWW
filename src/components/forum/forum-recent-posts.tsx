@@ -49,11 +49,11 @@ export async function ForumRecentPosts() {
             className="group block glass border border-green-500/10 hover:border-green-500/30 rounded-xl p-4 transition-all hover-lift"
           >
             <div className="flex items-start justify-between">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  {post.pinned && <Pin className="h-4 w-4 text-green-400" />}
-                  {post.locked && <Lock className="h-4 w-4 text-gray-400" />}
-                  <h3 className="font-semibold text-white group-hover:text-green-400 transition-colors">
+                  {post.pinned && <Pin className="h-4 w-4 text-green-400 flex-shrink-0" />}
+                  {post.locked && <Lock className="h-4 w-4 text-gray-400 flex-shrink-0" />}
+                  <h3 className="font-semibold text-white group-hover:text-green-400 transition-colors break-words">
                     {post.title}
                   </h3>
                 </div>

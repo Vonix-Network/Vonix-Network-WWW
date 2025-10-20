@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Gamepad2, MessageSquare, Users, Shield, Sparkles, Zap } from 'lucide-react';
 import { LiveChat } from '@/components/chat/LiveChat';
 import { getServerSession } from '@/lib/auth';
-import { PublicNav } from '@/components/public/nav';
+import { UnifiedNav } from '@/components/nav/unified-nav';
 import SpaceBackground from '@/components/SpaceBackground';
 
 // Force dynamic rendering and disable all caching
@@ -30,7 +30,7 @@ export default async function HomePage() {
       />
 
       {/* Header */}
-      <PublicNav user={session?.user ? { id: session.user.id, username: session.user.name || '', role: session.user.role || 'user' } : null} />
+      <UnifiedNav user={session?.user} />
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 md:py-32 text-center relative">

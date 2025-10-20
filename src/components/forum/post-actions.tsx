@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MoreVertical, Trash2, Pin, Lock, Unlock } from 'lucide-react';
+import { MoreVertical, Trash2, Pin, Lock, Unlock, Pencil, Flag } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PostActionsProps {
@@ -12,6 +12,7 @@ interface PostActionsProps {
   isModerator: boolean;
   isPinned: boolean;
   isLocked: boolean;
+  onUpdate?: () => void;
 }
 
 export function PostActions({ 
@@ -20,11 +21,15 @@ export function PostActions({
   isAuthor, 
   isModerator,
   isPinned,
-  isLocked 
+  isLocked,
+  onUpdate
 }: PostActionsProps) {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check if user has any permissions to see the menu
+  const hasPermissions = isAuthor || isModerator;
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
@@ -76,6 +81,7 @@ export function PostActions({
       }
 
       toast.success(isPinned ? 'Post unpinned' : 'Post pinned');
+      onUpdate?.();
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update post');
@@ -101,6 +107,7 @@ export function PostActions({
       }
 
       toast.success(isLocked ? 'Post unlocked' : 'Post locked');
+      onUpdate?.();
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update post');
@@ -110,8 +117,33 @@ export function PostActions({
     }
   };
 
-  // Don't show menu if user has no permissions
-  if (!isAuthor && !isModerator) {
+  const handleReport = async () => {
+    const reason = prompt('Please provide a reason for reporting this post:');
+    if (!reason) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/forum/posts/${postId}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to report post');
+      }
+
+      toast.success('Post reported successfully. Moderators will review it.');
+    } catch (error) {
+      toast.error('Failed to report post');
+    } finally {
+      setIsLoading(false);
+      setShowMenu(false);
+    }
+  };
+
+  // Show menu to everyone (for report option), but hide if no permissions
+  if (!hasPermissions && !true) { // Always show for report option
     return null;
   }
 
@@ -138,6 +170,30 @@ export function PostActions({
           
           {/* Menu - Fixed positioning */}
           <div className="fixed top-20 right-8 glass border border-white/20 rounded-lg overflow-hidden z-[9999] min-w-[180px] shadow-2xl">
+            {/* Edit Action (Author or Moderator) */}
+            {(isAuthor || isModerator) && (
+              <button
+                onClick={() => router.push(`/forum/${categorySlug}/${postId}/edit`)}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-4 py-2 text-blue-400 hover:bg-blue-500/10 transition-colors w-full text-left text-sm"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit Post
+              </button>
+            )}
+
+            {/* Report Option (for non-moderators/non-authors) */}
+            {!isModerator && !isAuthor && (
+              <button
+                onClick={handleReport}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-500/10 transition-colors w-full text-left text-sm"
+              >
+                <Flag className="h-4 w-4" />
+                Report Post
+              </button>
+            )}
+
             {/* Moderator Actions */}
             {isModerator && (
               <>

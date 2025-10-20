@@ -11,7 +11,6 @@ import { BBCode } from '@/lib/bbcode';
 import { formatTimeAgo } from '@/lib/date-utils';
 import { PostActions } from '@/components/forum/post-actions';
 import { ReplyForm } from '@/components/forum/reply-form';
-import { PostModeration } from '@/components/forum/post-moderation';
 import { ForumRepliesSection } from '@/components/forum/forum-replies-section';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -141,19 +140,6 @@ export default async function PostPage({ params }: PostPageProps) {
               )}
             </div>
           </div>
-          
-          {/* Post Moderation */}
-          {session && (
-            <PostModeration
-              postId={postData.post.id}
-              authorId={postData.post.authorId}
-              currentUserId={parseInt(session.user.id)}
-              userRole={session.user.role as 'user' | 'moderator' | 'admin'}
-              isPinned={postData.post.pinned}
-              isLocked={postData.post.locked}
-              categorySlug={params.slug}
-            />
-          )}
         </div>
         
         <div className="flex-1">
@@ -230,12 +216,12 @@ export default async function PostPage({ params }: PostPageProps) {
           </div>
 
           {/* Post Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
               <Clock className="h-3 w-3" />
               {formatTimeAgo(postData.post.createdAt)}
             </div>
-            <div className="prose prose-invert max-w-none">
+            <div className="prose prose-invert max-w-none break-words">
               <BBCode className="text-gray-300">{postData.post.content}</BBCode>
             </div>
           </div>

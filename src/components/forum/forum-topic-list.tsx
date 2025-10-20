@@ -81,15 +81,15 @@ export function ForumTopicList({ categorySlug, categoryId, initialTopics }: Foru
               className="group block glass border border-green-500/10 hover:border-green-500/30 rounded-xl p-4 transition-all hover-lift"
             >
               <div className="flex items-start justify-between">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    {topic.pinned && <Pin className="h-4 w-4 text-green-400" />}
-                    {topic.locked && <Lock className="h-4 w-4 text-gray-400" />}
-                    <h3 className="font-semibold text-white group-hover:text-green-400 transition-colors">
+                    {topic.pinned && <Pin className="h-4 w-4 text-green-400 flex-shrink-0" />}
+                    {topic.locked && <Lock className="h-4 w-4 text-gray-400 flex-shrink-0" />}
+                    <h3 className="font-semibold text-white group-hover:text-green-400 transition-colors break-words">
                       {topic.title}
                     </h3>
                   </div>
-                  <p className="text-sm text-gray-400 line-clamp-2 mb-2">
+                  <p className="text-sm text-gray-400 line-clamp-2 mb-2 break-words whitespace-normal">
                     {stripBBCode(topic.content)}
                   </p>
                   <div className="flex items-center gap-4 text-xs text-gray-500">

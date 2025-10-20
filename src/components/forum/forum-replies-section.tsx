@@ -108,9 +108,9 @@ export function ForumRepliesSection({ postId, initialReplies, session, rankMap }
                 </div>
 
                 {/* Reply Content */}
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-white break-words">
                       {reply.author?.username || 'Unknown'}
                     </span>
                     {reply.author?.role && (
@@ -139,7 +139,7 @@ export function ForumRepliesSection({ postId, initialReplies, session, rankMap }
                     {formatTimeAgo(reply.createdAt)}
                   </div>
 
-                  <div className="prose prose-invert max-w-none mb-4">
+                  <div className="prose prose-invert max-w-none mb-4 break-words">
                     <BBCode className="text-gray-300">{reply.content}</BBCode>
                   </div>
 
