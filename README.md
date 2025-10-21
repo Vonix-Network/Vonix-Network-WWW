@@ -18,6 +18,7 @@ A modern, full-stack Minecraft community platform built with Next.js 14, featuri
 | 🤖 **AI Assistants** | [AI_GUIDE.md](AI_GUIDE.md) | Complete codebase guide for AI |
 | ✅ **Validation** | [SETUP_CHECKLIST.md](SETUP_CHECKLIST.md) | Testing checklist |
 | 🗄️ **Database** | [src/db/README.md](src/db/README.md) | Database management |
+| 🔄 **Multi-DB Support** | [docs/MULTI_DATABASE_GUIDE.md](docs/MULTI_DATABASE_GUIDE.md) | PostgreSQL, MySQL, MariaDB |
 | 🎮 **XP System** | [docs/XP_INTEGRATION_GUIDE.md](docs/XP_INTEGRATION_GUIDE.md) | Leveling & achievements |
 
 ---
@@ -77,7 +78,7 @@ A modern, full-stack Minecraft community platform built with Next.js 14, featuri
 - **Next.js API Routes** - Serverless API endpoints
 - **NextAuth.js** - Authentication system
 - **Drizzle ORM** - Type-safe database queries
-- **Turso** - Edge SQLite database
+- **Multi-Database Support** - Turso, PostgreSQL, MySQL, MariaDB
 - **WebSocket** - Real-time communication
 - **Discord.js** - Discord bot integration
 
