@@ -67,6 +67,7 @@ export const authOptions: NextAuthOptions = {
 
           return {
             id: user.id.toString(),
+            username: user.username,
             name: user.username,
             email: user.email || undefined,
             role: user.role,
@@ -87,6 +88,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/login',
+    signOut: '/',
     error: '/login',
   },
   callbacks: {
@@ -94,6 +96,7 @@ export const authOptions: NextAuthOptions = {
       // Initial sign in
       if (user) {
         token.id = user.id;
+        token.username = user.username;
         token.role = user.role;
         token.minecraftUsername = user.minecraftUsername;
         token.minecraftUuid = user.minecraftUuid;
@@ -110,6 +113,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
+        session.user.username = token.username as string | undefined;
         session.user.role = token.role as string;
         session.user.minecraftUsername = token.minecraftUsername as string | undefined;
         session.user.minecraftUuid = token.minecraftUuid as string | undefined;

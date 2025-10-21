@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -22,15 +22,30 @@ import {
   User,
   LogIn,
   UserPlus,
+  ChevronDown,
+  UserCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/notifications/notification-bell';
+
+// Helper function for Minecraft avatars
+function getUserAvatar(minecraftUsername?: string | null, avatar?: string | null, size: number = 64): string {
+  if (minecraftUsername) {
+    return `https://mc-heads.net/head/${minecraftUsername}/${size}`;
+  }
+  if (avatar) {
+    return avatar;
+  }
+  return `https://mc-heads.net/head/steve/${size}`;
+}
 
 interface UnifiedNavProps {
   user?: {
     id?: string;
     name?: string | null;
     username?: string;
+    minecraftUsername?: string | null;
+    avatar?: string | null;
     role?: string;
   } | null;
 }
@@ -38,6 +53,36 @@ interface UnifiedNavProps {
 export function UnifiedNav({ user }: UnifiedNavProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isModerationOpen, setIsModerationOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const moderationRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      try {
+        if (moderationRef.current && !moderationRef.current.contains(event.target as Node)) {
+          setIsModerationOpen(false);
+        }
+        if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+          setIsUserMenuOpen(false);
+        }
+      } catch (error) {
+        console.error('Error in click outside handler:', error);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsModerationOpen(false);
+    setIsUserMenuOpen(false);
+  }, [pathname]);
 
   // Public navigation items
   const publicNavItems = [
@@ -74,7 +119,7 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link 
-              href={user ? '/dashboard' : '/'} 
+              href="/" 
               className="flex items-center gap-2 group"
             >
               <div className="relative">
@@ -120,62 +165,95 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                     <NotificationBell />
 
                     {isModerator && (
-                      <div className="relative group">
-                        <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all">
+                      <div className="relative" ref={moderationRef}>
+                        <button
+                          onClick={() => setIsModerationOpen(!isModerationOpen)}
+                          className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                        >
                           <Shield className="h-4 w-4" />
                           <span className="hidden sm:inline">Moderation</span>
+                          <ChevronDown className={cn("h-3 w-3 transition-transform", isModerationOpen && "rotate-180")} />
                         </button>
-                        <div className="absolute right-0 top-full mt-2 w-48 glass border border-blue-500/20 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                          <Link
-                            href="/moderation/forum"
-                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-colors first:rounded-t-lg"
-                          >
-                            <MessageSquare className="h-4 w-4" />
-                            Forum Moderation
-                          </Link>
-                          <Link
-                            href="/moderation/social"
-                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-colors last:rounded-b-lg"
-                          >
-                            <Users className="h-4 w-4" />
-                            Social Moderation
-                          </Link>
-                        </div>
+                        {isModerationOpen && (
+                          <div className="absolute right-0 top-full mt-2 w-48 glass border border-blue-500/20 rounded-lg shadow-xl z-50">
+                            <Link
+                              href="/moderation/forum"
+                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-colors first:rounded-t-lg"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                              Forum Moderation
+                            </Link>
+                            <Link
+                              href="/moderation/social"
+                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-colors last:rounded-b-lg"
+                            >
+                              <Users className="h-4 w-4" />
+                              Social Moderation
+                            </Link>
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {isAdmin && (
                       <Link
                         href="/admin"
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 transition-all"
                       >
                         <Shield className="h-4 w-4" />
                         <span className="hidden sm:inline">Admin</span>
                       </Link>
                     )}
 
-                    <Link
-                      href="/settings"
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
-                    >
-                      <Settings className="h-4 w-4" />
-                      <span className="hidden sm:inline">Settings</span>
-                    </Link>
-
-                    <button
-                      onClick={() => signOut()}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span className="hidden sm:inline">Logout</span>
-                    </button>
+                    {/* User Menu Dropdown */}
+                    <div className="relative" ref={userMenuRef}>
+                      <button
+                        onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                        className="flex items-center gap-2 px-2 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                      >
+                        <img
+                          src={getUserAvatar(user.minecraftUsername, user.avatar, 32)}
+                          alt={user.username || user.name || 'User'}
+                          className="h-7 w-7 rounded-lg pixelated border border-cyan-500/30"
+                        />
+                        <span className="hidden lg:inline max-w-[100px] truncate">
+                          {user.username || user.name}
+                        </span>
+                        <ChevronDown className={cn("h-3 w-3 transition-transform", isUserMenuOpen && "rotate-180")} />
+                      </button>
+                      {isUserMenuOpen && (
+                        <div className="absolute right-0 top-full mt-2 w-52 glass border border-blue-500/20 rounded-lg shadow-xl z-50 overflow-hidden">
+                          <Link
+                            href={`/profile/${user.username || user.id}`}
+                            className="flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-colors border-b border-white/10"
+                          >
+                            <UserCircle className="h-4 w-4" />
+                            View Profile
+                          </Link>
+                          <Link
+                            href="/settings"
+                            className="flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-colors"
+                          >
+                            <Settings className="h-4 w-4" />
+                            Settings
+                          </Link>
+                          <button
+                            onClick={() => signOut({ callbackUrl: '/', redirect: true })}
+                            className="flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors w-full text-left border-t border-white/10"
+                          >
+                            <LogOut className="h-4 w-4" />
+                            Logout
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <>
                     {/* Public user actions */}
                     <Link
                       href="/login"
-                      className="flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-cyan-400 transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 rounded-lg transition-all"
                     >
                       <LogIn className="h-4 w-4" />
                       <span className="hidden sm:inline">Login</span>
@@ -240,9 +318,54 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                   {/* Divider */}
                   <div className="border-t border-white/10 my-4" />
 
+                  {/* User Profile Card */}
+                  <div className="px-4 py-3 glass rounded-lg border border-cyan-500/20 mb-4">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={getUserAvatar(user.minecraftUsername, user.avatar, 48)}
+                        alt={user.username || user.name || 'User'}
+                        className="h-12 w-12 rounded-lg pixelated border-2 border-cyan-500/50"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-cyan-400 truncate">
+                          {user.username || user.name}
+                        </p>
+                        <p className="text-xs text-gray-400 capitalize">
+                          {user.role || 'Member'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/profile/${user.username || user.id}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                  >
+                    <UserCircle className="h-5 w-5" />
+                    My Profile
+                  </Link>
+
+                  <Link
+                    href="/settings"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                  >
+                    <Settings className="h-5 w-5" />
+                    Settings
+                  </Link>
+
+                  {/* Divider for elevated roles */}
+                  {(isModerator || isAdmin) && (
+                    <div className="border-t border-white/10 my-4" />
+                  )}
+
                   {/* Moderation Links */}
                   {isModerator && (
                     <>
+                      <div className="px-4 py-2">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Moderation</p>
+                      </div>
                       <Link
                         href="/moderation/forum"
                         onClick={() => setIsMobileMenuOpen(false)}
@@ -264,30 +387,28 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
 
                   {/* Admin Link */}
                   {isAdmin && (
-                    <Link
-                      href="/admin"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
-                    >
-                      <Shield className="h-5 w-5" />
-                      Admin
-                    </Link>
+                    <>
+                      <div className="px-4 py-2">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Administration</p>
+                      </div>
+                      <Link
+                        href="/admin"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 transition-all"
+                      >
+                        <Shield className="h-5 w-5" />
+                        Admin Dashboard
+                      </Link>
+                    </>
                   )}
 
-                  {/* Settings */}
-                  <Link
-                    href="/settings"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
-                  >
-                    <Settings className="h-5 w-5" />
-                    Settings
-                  </Link>
+                  {/* Divider */}
+                  <div className="border-t border-white/10 my-4" />
 
                   {/* Logout */}
                   <button
                     onClick={() => {
-                      signOut();
+                      signOut({ callbackUrl: '/', redirect: true });
                       setIsMobileMenuOpen(false);
                     }}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all w-full text-left"
