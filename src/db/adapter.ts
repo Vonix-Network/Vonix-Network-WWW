@@ -38,15 +38,18 @@ export async function createDatabaseClient(config: DatabaseConfig): Promise<Data
       // Dynamic import to avoid loading unused dependencies
       const postgres = await import('postgres').then(m => m.default);
       
-      const client = postgres(config.url || {
-        host: config.host!,
-        port: config.port!,
-        database: config.database!,
-        username: config.user!,
-        password: config.password!,
-        ssl: config.ssl ? 'require' : false,
-        max: config.poolMax || 10,
-      });
+      // Use connection URL if provided, otherwise use individual config options
+      const client = config.url 
+        ? postgres(config.url)
+        : postgres({
+            host: config.host!,
+            port: config.port!,
+            database: config.database!,
+            username: config.user!,
+            password: config.password!,
+            ssl: config.ssl ? 'require' : false,
+            max: config.poolMax || 10,
+          });
 
       return drizzlePostgres(client, { schema, logger }) as DatabaseInstance;
     }
@@ -56,17 +59,20 @@ export async function createDatabaseClient(config: DatabaseConfig): Promise<Data
       // Dynamic import to avoid loading unused dependencies
       const mysql = await import('mysql2/promise');
       
-      const connection = await mysql.createPool(config.url || {
-        host: config.host!,
-        port: config.port!,
-        database: config.database!,
-        user: config.user!,
-        password: config.password!,
-        ssl: config.ssl ? {} : undefined,
-        waitForConnections: true,
-        connectionLimit: config.poolMax || 10,
-        queueLimit: 0,
-      });
+      // Use connection URL if provided, otherwise use individual config options
+      const connection = config.url
+        ? await mysql.createPool(config.url)
+        : await mysql.createPool({
+            host: config.host!,
+            port: config.port!,
+            database: config.database!,
+            user: config.user!,
+            password: config.password!,
+            ssl: config.ssl ? {} : undefined,
+            waitForConnections: true,
+            connectionLimit: config.poolMax || 10,
+            queueLimit: 0,
+          });
 
       return drizzleMysql(connection, { schema, mode: 'default', logger }) as DatabaseInstance;
     }
