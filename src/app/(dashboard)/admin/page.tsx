@@ -140,7 +140,7 @@ async function AdminContent() {
     .slice(0, 10);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 fade-in-up">
+    <div className="w-full space-y-6 fade-in-up">
       {/* Header */}
       <div className="glass border border-red-500/20 rounded-2xl p-6">
         <div className="flex items-center justify-between">
