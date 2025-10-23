@@ -89,3 +89,21 @@ export function isValidMinecraftUsername(username: string): boolean {
   const usernameRegex = /^[a-zA-Z0-9_]{3,16}$/;
   return usernameRegex.test(username);
 }
+
+/**
+ * Get Minecraft avatar URL from mc-heads.net
+ * Falls back to Steve if no username provided
+ */
+export function getUserAvatar(
+  minecraftUsername?: string | null,
+  avatar?: string | null,
+  size: number = 64
+): string {
+  if (minecraftUsername) {
+    return `https://mc-heads.net/head/${minecraftUsername}/${size}`;
+  }
+  if (avatar) {
+    return avatar;
+  }
+  return `https://mc-heads.net/head/steve/${size}`;
+}

@@ -17,7 +17,9 @@ import {
   Bot,
   BarChart3,
   Shield,
-  ChevronRight
+  ChevronRight,
+  TrendingUp,
+  Ticket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -70,6 +72,13 @@ export function AdminSidebar() {
       items: [
         { label: 'Donations', href: '/admin/donations', icon: DollarSign },
         { label: 'Donor Ranks', href: '/admin/donor-ranks', icon: Award },
+      ],
+    },
+    {
+      title: 'XP & Progression',
+      items: [
+        { label: 'Level Rewards', href: '/admin/xp-rewards', icon: TrendingUp },
+        { label: 'Registration Codes', href: '/admin/registration-codes', icon: Ticket },
       ],
     },
     {

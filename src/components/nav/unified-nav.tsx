@@ -99,6 +99,7 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
     { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/servers', label: 'Servers', icon: Server },
     { href: '/social', label: 'Social', icon: Users },
+    { href: '/groups', label: 'Groups', icon: Users },
     { href: '/forum', label: 'Forum', icon: MessageSquare },
     { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { href: '/messages', label: 'Messages', icon: Mail },

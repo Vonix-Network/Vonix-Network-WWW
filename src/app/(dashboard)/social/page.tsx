@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { CreatePostForm } from '@/components/social/create-post-form';
 import { Users as UsersIcon } from 'lucide-react';
 import { SocialPostsFeedWrapper } from '@/components/social/social-posts-feed-wrapper';
+import StoriesBar from '@/components/social/stories-bar';
 
 // Force dynamic rendering and disable all caching
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,11 @@ export default async function SocialPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 fade-in-up">
+      {/* Stories Bar */}
+      <div className="glass border border-green-500/20 rounded-2xl overflow-hidden">
+        <StoriesBar />
+      </div>
+
       {/* Header - Loads immediately */}
       <div className="glass border border-green-500/20 rounded-2xl p-6">
         <div className="flex items-center justify-between">
