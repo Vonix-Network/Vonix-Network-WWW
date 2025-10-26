@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MoreVertical, Trash2, Pin, Lock, Unlock, Pencil, Flag } from 'lucide-react';
 import { toast } from 'sonner';
+import { ReportButton } from '@/components/shared/report-button';
 
 interface PostActionsProps {
   postId: number;
@@ -117,30 +118,6 @@ export function PostActions({
     }
   };
 
-  const handleReport = async () => {
-    const reason = prompt('Please provide a reason for reporting this post:');
-    if (!reason) return;
-
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/forum/posts/${postId}/report`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to report post');
-      }
-
-      toast.success('Post reported successfully. Moderators will review it.');
-    } catch (error) {
-      toast.error('Failed to report post');
-    } finally {
-      setIsLoading(false);
-      setShowMenu(false);
-    }
-  };
 
   // Show menu to everyone (for report option), but hide if no permissions
   if (!hasPermissions && !true) { // Always show for report option
@@ -184,14 +161,13 @@ export function PostActions({
 
             {/* Report Option (for non-moderators/non-authors) */}
             {!isModerator && !isAuthor && (
-              <button
-                onClick={handleReport}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-500/10 transition-colors w-full text-left text-sm"
-              >
-                <Flag className="h-4 w-4" />
-                Report Post
-              </button>
+              <div className="px-2 py-1">
+                <ReportButton
+                  contentType="forum_post"
+                  contentId={postId}
+                  className="w-full justify-start p-2 text-left text-sm"
+                />
+              </div>
             )}
 
             {/* Moderator Actions */}

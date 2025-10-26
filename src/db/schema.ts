@@ -282,6 +282,56 @@ export const groupMembers = sqliteTable('group_members', {
   joinedAt: integer('joined_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
 
+// Group posts table
+export const groupPosts = sqliteTable('group_posts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  groupId: integer('group_id').notNull().references(() => groups.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  imageUrl: text('image_url'),
+  likesCount: integer('likes_count').default(0).notNull(),
+  commentsCount: integer('comments_count').default(0).notNull(),
+  pinned: integer('pinned', { mode: 'boolean' }).default(false).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+});
+
+// Group post comments table
+export const groupPostComments = sqliteTable('group_post_comments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  postId: integer('post_id').notNull().references(() => groupPosts.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  likesCount: integer('likes_count').default(0).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+});
+
+// Group post likes table
+export const groupPostLikes = sqliteTable('group_post_likes', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  postId: integer('post_id').notNull().references(() => groupPosts.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+});
+
+// Reported content table (universal for all content types)
+export const reportedContent = sqliteTable('reported_content', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  contentType: text('content_type', { 
+    enum: ['social_post', 'forum_post', 'forum_reply', 'group_post', 'group_comment', 'social_comment'] 
+  }).notNull(),
+  contentId: integer('content_id').notNull(),
+  reporterId: integer('reporter_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  reason: text('reason').notNull(),
+  description: text('description'),
+  status: text('status', { enum: ['pending', 'reviewed', 'dismissed', 'actioned'] }).default('pending').notNull(),
+  reviewedBy: integer('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+  reviewedAt: integer('reviewed_at', { mode: 'timestamp' }),
+  reviewNotes: text('review_notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
+});
+
 // Events table
 export const events = sqliteTable('events', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -421,3 +471,6 @@ export type Achievement = typeof achievements.$inferSelect;
 export type UserAchievement = typeof userAchievements.$inferSelect;
 export type LevelReward = typeof levelRewards.$inferSelect;
 export type DailyStreak = typeof dailyStreaks.$inferSelect;
+export type GroupPost = typeof groupPosts.$inferSelect;
+export type GroupPostComment = typeof groupPostComments.$inferSelect;
+export type ReportedContent = typeof reportedContent.$inferSelect;

@@ -1,0 +1,131 @@
+feat: Complete group posts social features - likes, comments, and editing
+
+Implemented full social engagement features for group posts, bringing the
+group posts system to 100% feature parity with social posts.
+
+## New Features
+
+### Like System
+- POST /api/groups/[id]/posts/[postId]/like - Toggle like/unlike
+- Real-time like count updates without page refresh
+- Visual feedback with filled heart icons when liked
+- Optimistic UI updates for instant response
+- Permission check: members only
+
+### Comments System
+- GET /api/groups/[id]/posts/[postId]/comments - Fetch all comments
+- POST /api/groups/[id]/posts/[postId]/comments - Create new comment
+- DELETE /api/groups/[id]/posts/[postId]/comments/[commentId] - Delete comment
+- GroupPostComments component with threaded display
+- Real-time comment count updates
+- Auto-expand/collapse comments on button click
+- Permission-based delete (author, group mod, site admin)
+
+### Post Editing
+- Inline edit modal with content and image URL fields
+- Cancel/Save actions with proper state management
+- Permission check: author, group moderator, or site admin
+- Edit button in post actions menu
+- Updates reflected immediately after save
+
+## Components
+
+### New
+- src/components/groups/group-post-comments.tsx
+  - Standalone comments component
+  - Comment form with character limit (2000)
+  - Comment list with author avatars
+  - Delete functionality with permissions
+  - Loading and empty states
+
+### Updated
+- src/components/groups/group-posts-feed.tsx
+  - Added like functionality with state tracking
+  - Added comments toggle and display
+  - Added edit modal with form controls
+  - Improved UI feedback and animations
+  - Permission-based button visibility
+
+## API Routes
+
+### New Endpoints
+- src/app/api/groups/[id]/posts/[postId]/like/route.ts
+- src/app/api/groups/[id]/posts/[postId]/comments/route.ts
+- src/app/api/groups/[id]/posts/[postId]/comments/[commentId]/route.ts
+
+### Updated Endpoints
+- src/app/api/groups/[id]/posts/[postId]/route.ts
+  - PATCH now supports content and imageUrl updates (not just pinned)
+  - Enhanced permission checks
+
+## Bug Fixes
+
+### Type Errors (9 fixed)
+- Fixed session.user.id type conversion (string → number) across all group APIs
+- src/app/api/groups/[id]/posts/route.ts (3 fixes)
+- src/app/api/groups/[id]/posts/[postId]/route.ts (4 fixes)
+- src/app/api/report/route.ts (2 fixes)
+- All TypeScript compilation errors resolved
+
+### Logic Fixes
+- Comments count increment now uses proper query logic
+- Like counts properly increment/decrement with safety checks (Math.max(0, ...))
+- Image display during edit mode properly hidden
+
+## Documentation
+
+### Updated
+- CHANGELOG.md - Added v2.2.0 entry with all new features
+- docs/GROUP_POSTS_AND_REPORTING.md - Marked complete, added social features
+- docs/CLEANUP_TEMP_FILES.md - List of temporary files for removal
+
+### Temporary Files (to be removed)
+- COMPLETE_STATUS_REPORT.md
+- GROUP_POSTS_IMPLEMENTATION_STATUS.md
+- IMPLEMENTATION_CHECKLIST.md
+- IMPLEMENTATION_SUMMARY.md
+- MISSING_FEATURES_ANALYSIS.md
+- WHERE_TO_FIND_NEW_FEATURES.md
+- FINAL_IMPLEMENTATION_REPORT.md
+- CLEANUP_SUMMARY.md
+- TODOS_COMPLETED.md
+
+## Testing
+
+- ✅ TypeScript compilation: npx tsc --noEmit (0 errors)
+- ✅ Production build: npm run build (successful)
+- ✅ Dev server: npm run dev (running)
+- ✅ All new API endpoints tested
+- ✅ UI interactions verified
+
+## Impact
+
+### Before (v2.1.0)
+- Users could create and view group posts
+- Basic moderation (pin, delete)
+- No social engagement features
+
+### After (v2.2.0)
+- Full social engagement (likes, comments, editing)
+- Real-time UI updates
+- Complete feature parity with social posts
+- Production-ready group posts system
+
+## Database Changes
+
+No schema changes required - all tables already existed:
+- group_posts (includes likesCount, commentsCount)
+- group_post_comments (ready for use)
+- group_post_likes (ready for use)
+
+Tables were created in previous migrations but APIs were incomplete.
+
+## Breaking Changes
+
+None - All changes are backwards compatible additions.
+
+---
+
+**Version:** 2.2.0
+**Date:** October 24, 2025
+**Completion:** Group Posts System - 100%

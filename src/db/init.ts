@@ -17,6 +17,7 @@ config({ path: resolve(process.cwd(), '.env') });
 
 import { db, client, checkDatabaseConnection } from './index';
 import { addXPSystem } from './add-xp-system';
+import { addGroupPostsAndReporting } from './add-group-posts-and-reporting';
 
 async function initializeDatabase() {
   console.log(chalk.blue('\n🚀 Initializing Vonix Network Database...\n'));
@@ -64,8 +65,13 @@ async function initializeDatabase() {
     await addUserPreferences();
     console.log(chalk.green('✓ User preferences ready\n'));
 
-    // Step 7: Verify all tables exist
-    console.log(chalk.cyan('🔍 Step 7: Verifying database integrity...'));
+    // Step 7: Add group posts and content reporting
+    console.log(chalk.cyan('📝 Step 7: Adding group posts and content reporting...'));
+    await addGroupPostsAndReporting();
+    console.log(chalk.green('✓ Group posts and reporting system ready\n'));
+
+    // Step 8: Verify all tables exist
+    console.log(chalk.cyan('🔍 Step 8: Verifying database integrity...'));
     await verifyDatabaseIntegrity();
     console.log(chalk.green('✓ All tables verified\n'));
 
@@ -77,6 +83,8 @@ async function initializeDatabase() {
     console.log(chalk.gray('  • Donation rank expiration'));
     console.log(chalk.gray('  • XP & Leveling system (5 tables)'));
     console.log(chalk.gray('  • User preferences (background, etc.)'));
+    console.log(chalk.gray('  • Group posts system (3 tables)'));
+    console.log(chalk.gray('  • Content reporting system (1 table)'));
     console.log(chalk.gray('  • 10 Achievements seeded'));
     console.log(chalk.gray('  • 6 Level rewards configured\n'));
 
@@ -164,6 +172,11 @@ async function verifyDatabaseIntegrity() {
     'forum_posts',
     'forum_replies',
     'servers',
+    'groups',
+    'group_members',
+    'group_posts',
+    'group_post_comments',
+    'reported_content',
     'xp_transactions',
     'achievements',
     'user_achievements',

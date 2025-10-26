@@ -5,6 +5,38 @@ All notable changes to Vonix Network will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-10-24
+
+### Added - Group Posts Social Features
+- **Like System** - Full like/unlike functionality for group posts with optimistic UI updates
+- **Comments System** - Create, view, and delete comments on group posts with real-time updates
+- **Edit Posts** - Inline editing for post content and images with author permissions
+- **GroupPostComments Component** - Dedicated component for threaded comment display
+- **API Endpoints**:
+  - `POST /api/groups/[id]/posts/[postId]/like` - Toggle likes
+  - `GET /api/groups/[id]/posts/[postId]/comments` - Fetch comments
+  - `POST /api/groups/[id]/posts/[postId]/comments` - Create comment
+  - `DELETE /api/groups/[id]/posts/[postId]/comments/[commentId]` - Delete comment
+- **UI Enhancements**:
+  - Heart icon fills when liked with animated color transitions
+  - Comment section expands/collapses on click
+  - Edit modal with cancel/save actions
+  - Permission-based edit button visibility
+
+### Enhanced
+- GroupPostsFeed now fully interactive with social engagement
+- Like counts update in real-time without page refresh
+- Comment counts auto-increment on new comments
+- Edit functionality respects author/moderator permissions
+- Improved UI feedback with toast notifications
+
+### Fixed
+- TypeScript errors with `session.user.id` type conversions (string → number)
+- Comments count increment logic in post creation
+- All 9 type errors resolved across group post APIs
+- Missing edit button in post actions menu
+- Image display during post editing
+
 ## [2.1.0] - 2025-10-19
 
 ### Added - Phase 1-3 Implementation

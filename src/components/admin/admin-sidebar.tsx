@@ -19,7 +19,8 @@ import {
   Shield,
   ChevronRight,
   TrendingUp,
-  Ticket
+  Ticket,
+  Flag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -59,6 +60,7 @@ export function AdminSidebar() {
         { label: 'Blog', href: '/admin/blog', icon: FileText },
         { label: 'Forum', href: '/moderation/forum', icon: MessageSquare },
         { label: 'Social', href: '/moderation/social', icon: Share2 },
+        { label: 'Reports', href: '/admin/reports', icon: Flag },
       ],
     },
     {

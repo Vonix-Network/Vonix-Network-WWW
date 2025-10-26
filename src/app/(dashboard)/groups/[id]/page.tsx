@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Users, Lock, Globe, UserPlus, UserMinus, Settings } from 'lucide-react';
+import { ArrowLeft, Users, Lock, Globe, UserPlus, UserMinus, Settings, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { getUserAvatar } from '@/lib/utils';
+import { GroupPostsFeed } from '@/components/groups/group-posts-feed';
 
 interface GroupMember {
   id: number;
@@ -224,6 +225,50 @@ export default function GroupDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Posts Section - Only visible to members */}
+      {isMember && (
+        <div className="bg-gray-800/50 border border-purple-500/30 rounded-lg p-6 mb-6">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <MessageSquare className="w-6 h-6 text-cyan-400" />
+            Group Posts
+          </h2>
+          
+          <GroupPostsFeed 
+            groupId={parseInt(groupId)}
+            userRole={group.userMembership?.role as 'admin' | 'moderator' | 'member' | null}
+          />
+        </div>
+      )}
+
+      {/* Non-member message */}
+      {!isMember && group.privacy === 'public' && (
+        <div className="bg-gray-800/50 border border-purple-500/30 rounded-lg p-6 mb-6 text-center">
+          <MessageSquare className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">Join to See Posts</h2>
+          <p className="text-gray-400 mb-4">
+            You need to be a member to view and create posts in this group.
+          </p>
+          <button
+            onClick={handleJoin}
+            disabled={actionLoading}
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all inline-flex items-center gap-2 disabled:opacity-50"
+          >
+            <UserPlus className="w-5 h-5" />
+            Join Group
+          </button>
+        </div>
+      )}
+
+      {!isMember && group.privacy === 'private' && (
+        <div className="bg-gray-800/50 border border-purple-500/30 rounded-lg p-6 mb-6 text-center">
+          <Lock className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">Private Group</h2>
+          <p className="text-gray-400">
+            This is a private group. You need an invitation to join and view posts.
+          </p>
+        </div>
+      )}
 
       {/* Members */}
       <div className="bg-gray-800/50 border border-purple-500/30 rounded-lg p-6">
