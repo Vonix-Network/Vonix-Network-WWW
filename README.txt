@@ -1,12 +1,13 @@
 # 🎮 Vonix Network - Minecraft Community Platform
 
-[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.0-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2-blue?style=for-the-badge&logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Turso](https://img.shields.io/badge/Turso-Database-green?style=for-the-badge)](https://turso.tech/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker)](https://docker.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
-A modern, full-stack Minecraft community platform built with Next.js 14, featuring real-time server status, integrated forums, social features, and comprehensive admin tools.
+A modern, full-stack Minecraft community platform built with Next.js 16, React 19, and TypeScript 5.9, featuring real-time server status, integrated forums, social features, and comprehensive admin tools.
 
 ---
 
@@ -54,7 +55,7 @@ A modern, full-stack Minecraft community platform built with Next.js 14, featuri
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend       │    │   Database      │
-│   (Next.js 14)  │◄──►│   (API Routes)  │◄──►│   (Turso)       │
+│   (Next.js 16)  │◄──►│   (API Routes)  │◄──►│   (Turso)       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          ▼                       ▼                       ▼
@@ -67,8 +68,9 @@ A modern, full-stack Minecraft community platform built with Next.js 14, featuri
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Next.js 14** - React framework with App Router
-- **TypeScript** - Type-safe development
+- **Next.js 16** - React framework with App Router and Turbopack
+- **React 19** - Latest React with concurrent features
+- **TypeScript 5.9** - Advanced type system
 - **Tailwind CSS** - Utility-first styling
 - **Lucide React** - Beautiful icons
 - **React Query** - Data fetching and caching

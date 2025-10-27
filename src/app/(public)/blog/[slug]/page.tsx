@@ -146,7 +146,9 @@ export default async function BlogPostPage({
 }: {
   params: { slug: string };
 }) {
-  const post = await getBlogPost(params.slug);
+  // Unwrap params Promise (Next.js 16 requirement)
+  const { slug } = await params;
+  const post = await getBlogPost(slug);
 
   if (!post) {
     notFound();

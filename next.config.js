@@ -3,14 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false, // Remove X-Powered-By header for security
   compress: true, // Enable gzip compression
-  
-  // ESLint configuration
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
-  },
-  
+
   // TypeScript configuration
   typescript: {
     // !! WARN !!
@@ -19,32 +12,22 @@ const nextConfig = {
     // !! WARN !!
     ignoreBuildErrors: false, // Keep type checking enabled
   },
-  
-  // Performance optimizations
-  swcMinify: true,
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
 
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000'],
     },
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
     // Enable CSS optimization
     optimizeCss: true,
     // Enable package.json optimization
     optimizePackageImports: ['lucide-react', 'react-hook-form', 'zod', '@radix-ui/react-select'],
-    // Enable server components logging
-    serverComponentsExternalPackages: ['@node-rs/argon2', 'bcryptjs'],
   },
+
+  // Move serverComponentsExternalPackages to top level
+  serverExternalPackages: ['@node-rs/argon2', 'bcryptjs'],
+
+  // Add empty turbopack config to silence warning
+  turbopack: {},
 
   images: {
     remotePatterns: [
@@ -59,8 +42,6 @@ const nextConfig = {
     // Enable image optimization for better performance
     unoptimized: false,
   },
-
-  // Production optimizations
 
   // Bundle analyzer (only in development)
   ...(process.env.ANALYZE === 'true' && {

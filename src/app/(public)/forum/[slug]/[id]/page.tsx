@@ -27,7 +27,10 @@ export default async function PostPage({ params }: PostPageProps) {
   // Force no caching - always fetch fresh data
   noStore();
   const session = await getServerSession();
-  const postId = parseInt(params.id);
+
+  // Unwrap params Promise (Next.js 16 requirement)
+  const { slug, id } = await params;
+  const postId = parseInt(id);
 
   if (isNaN(postId)) {
     notFound();
@@ -115,7 +118,7 @@ export default async function PostPage({ params }: PostPageProps) {
       {/* Header */}
       <div className="glass border border-green-500/20 rounded-2xl p-6">
         <Link
-          href={`/forum/${params.slug}`}
+          href={`/forum/${slug}`}
           className="inline-flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -159,7 +162,7 @@ export default async function PostPage({ params }: PostPageProps) {
         {/* Post Actions */}
         <PostActions
           postId={postData.post.id}
-          categorySlug={params.slug}
+          categorySlug={slug}
           isAuthor={!!isAuthor}
           isModerator={!!isModerator}
           isPinned={postData.post.pinned}

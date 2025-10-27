@@ -24,11 +24,14 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   noStore();
   const session = await getServerSession(); // Optional - guests can view
 
+  // Unwrap params Promise (Next.js 16 requirement)
+  const { slug } = await params;
+
   // Get category
   const [category] = await db
     .select()
     .from(forumCategories)
-    .where(eq(forumCategories.slug, params.slug));
+    .where(eq(forumCategories.slug, slug));
 
   if (!category) {
     notFound();
@@ -108,8 +111,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       </div>
 
       {/* Topics - Client component for real-time updates */}
-      <ForumTopicList 
-        categorySlug={params.slug} 
+      <ForumTopicList
+        categorySlug={slug}
         categoryId={category.id}
         initialTopics={postsWithTimestamps}
       />
