@@ -8,7 +8,7 @@ import { awardXP, XP_REWARDS } from '@/lib/xp-system';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,7 +19,8 @@ export async function POST(
       );
     }
 
-    const commentId = parseInt(params.id);
+    const resolvedParams = await params;
+    const commentId = parseInt(resolvedParams.id);
     if (isNaN(commentId)) {
       return NextResponse.json(
         { error: 'Invalid comment ID' },

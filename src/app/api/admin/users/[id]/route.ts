@@ -36,12 +36,13 @@ async function fetchMinecraftUUID(minecraftUsername: string): Promise<string | n
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await requireAdmin();
 
-    const userId = parseInt(params.id);
+    const resolvedParams = await params;
+    const userId = parseInt(resolvedParams.id);
     if (isNaN(userId)) {
       return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
     }
@@ -141,12 +142,13 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await requireAdmin();
 
-    const userId = parseInt(params.id);
+    const resolvedParams = await params;
+    const userId = parseInt(resolvedParams.id);
     if (isNaN(userId)) {
       return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
     }

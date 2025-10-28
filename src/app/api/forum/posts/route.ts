@@ -127,9 +127,9 @@ export async function POST(request: NextRequest) {
     const validationResult = createForumPostSchema.safeParse(body);
 
     if (!validationResult.success) {
-      console.log('Validation errors:', validationResult.error.errors);
+      console.log('Validation errors:', validationResult.error.issues);
       return NextResponse.json(
-        { error: 'Invalid input', details: validationResult.error.errors },
+        { error: 'Invalid input', details: validationResult.error.issues },
         { status: 400 }
       );
     }

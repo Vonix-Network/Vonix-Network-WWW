@@ -14,7 +14,7 @@ const createCommentSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,7 +25,8 @@ export async function POST(
       );
     }
 
-    const postId = parseInt(params.id);
+    const resolvedParams = await params;
+    const postId = parseInt(resolvedParams.id);
     if (isNaN(postId)) {
       return NextResponse.json(
         { error: 'Invalid post ID' },
@@ -52,7 +53,7 @@ export async function POST(
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid request data', details: validation.error.errors },
+        { error: 'Invalid request data', details: validation.error.issues },
         { status: 400 }
       );
     }
@@ -153,10 +154,11 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const postId = parseInt(params.id);
+    const resolvedParams = await params;
+    const postId = parseInt(resolvedParams.id);
     if (isNaN(postId)) {
       return NextResponse.json(
         { error: 'Invalid post ID' },

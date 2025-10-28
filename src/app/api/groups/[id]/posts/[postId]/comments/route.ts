@@ -15,7 +15,7 @@ const createCommentSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; postId: string } }
+  { params }: { params: Promise<{ id: string; postId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,8 +23,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = parseInt(params.id);
-    const postId = parseInt(params.postId);
+    const resolvedParams = await params;
+    const groupId = parseInt(resolvedParams.id);
+    const postId = parseInt(resolvedParams.postId);
     const userId = Number(session.user.id);
 
     if (isNaN(groupId) || isNaN(postId)) {
@@ -60,6 +61,7 @@ export async function GET(
           minecraftUsername: users.minecraftUsername,
           avatar: users.avatar,
           role: users.role,
+          donationRankId: users.donationRankId,
         },
       })
       .from(groupPostComments)
@@ -79,7 +81,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string; postId: string } }
+  { params }: { params: Promise<{ id: string; postId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -87,8 +89,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = parseInt(params.id);
-    const postId = parseInt(params.postId);
+    const resolvedParams = await params;
+    const groupId = parseInt(resolvedParams.id);
+    const postId = parseInt(resolvedParams.postId);
     const userId = Number(session.user.id);
 
     if (isNaN(groupId) || isNaN(postId)) {
@@ -162,7 +165,7 @@ export async function POST(
     return NextResponse.json(commentWithAuthor, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error('Error creating comment:', error);
     return NextResponse.json({ error: 'Failed to create comment' }, { status: 500 });

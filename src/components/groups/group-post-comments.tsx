@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Send, Trash2 } from 'lucide-react';
+import { Send, Trash2, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Comment {
@@ -16,7 +16,17 @@ interface Comment {
     minecraftUsername: string | null;
     avatar: string | null;
     role: string;
+    donationRankId: string | null;
   };
+}
+
+interface DonationRank {
+  id: string;
+  name: string;
+  color: string;
+  textColor: string;
+  badge: string | null;
+  glow: boolean;
 }
 
 interface GroupPostCommentsProps {
@@ -42,6 +52,18 @@ export function GroupPostComments({ groupId, postId, userRole, onCommentAdded }:
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [donationRanks, setDonationRanks] = useState<Map<string, DonationRank>>(new Map());
+
+  // Fetch donation ranks
+  useEffect(() => {
+    fetch('/api/donor-ranks')
+      .then(res => res.json())
+      .then((ranks: DonationRank[]) => {
+        const rankMap = new Map<string, DonationRank>(ranks.map(r => [r.id, r]));
+        setDonationRanks(rankMap);
+      })
+      .catch(console.error);
+  }, []);
 
   const fetchComments = async () => {
     try {
@@ -159,7 +181,34 @@ export function GroupPostComments({ groupId, postId, userRole, onCommentAdded }:
                 <div className="flex-1 min-w-0">
                   <div className="bg-slate-800/50 rounded-lg px-4 py-2">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-white text-sm">{comment.author.username}</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span 
+                          className="font-semibold text-sm"
+                          style={{
+                            color: comment.author.donationRankId && donationRanks.has(comment.author.donationRankId)
+                              ? (donationRanks.get(comment.author.donationRankId)!.textColor !== '#000000' && donationRanks.get(comment.author.donationRankId)!.textColor !== '#000'
+                                ? donationRanks.get(comment.author.donationRankId)!.textColor
+                                : '#ffffff')
+                              : '#ffffff'
+                          }}
+                        >
+                          {comment.author.username}
+                        </span>
+                        {comment.author.donationRankId && donationRanks.has(comment.author.donationRankId) && (
+                          <span 
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold"
+                            style={{
+                              backgroundColor: donationRanks.get(comment.author.donationRankId)!.color + '20',
+                              color: (donationRanks.get(comment.author.donationRankId)!.textColor !== '#000000' && donationRanks.get(comment.author.donationRankId)!.textColor !== '#000') ? donationRanks.get(comment.author.donationRankId)!.textColor : '#ffffff',
+                              borderColor: donationRanks.get(comment.author.donationRankId)!.color + '60',
+                              border: '1px solid'
+                            }}
+                          >
+                            <Crown className="w-2.5 h-2.5" />
+                            {donationRanks.get(comment.author.donationRankId)!.badge || donationRanks.get(comment.author.donationRankId)!.name}
+                          </span>
+                        )}
+                      </div>
                       {canDelete && (
                         <button
                           onClick={() => handleDelete(comment.id)}

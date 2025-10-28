@@ -19,10 +19,11 @@ const updateCategorySchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const categoryId = parseInt(params.id);
+    const resolvedParams = await params;
+    const categoryId = parseInt(resolvedParams.id);
     if (isNaN(categoryId)) {
       return NextResponse.json(
         { error: 'Invalid category ID' },
@@ -55,7 +56,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -74,7 +75,8 @@ export async function PATCH(
       );
     }
 
-    const categoryId = parseInt(params.id);
+    const resolvedParams = await params;
+    const categoryId = parseInt(resolvedParams.id);
     if (isNaN(categoryId)) {
       return NextResponse.json(
         { error: 'Invalid category ID' },
@@ -87,7 +89,7 @@ export async function PATCH(
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid request data', details: validation.error.errors },
+        { error: 'Invalid request data', details: validation.error.issues },
         { status: 400 }
       );
     }
@@ -133,7 +135,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -152,7 +154,8 @@ export async function DELETE(
       );
     }
 
-    const categoryId = parseInt(params.id);
+    const resolvedParams = await params;
+    const categoryId = parseInt(resolvedParams.id);
     if (isNaN(categoryId)) {
       return NextResponse.json(
         { error: 'Invalid category ID' },

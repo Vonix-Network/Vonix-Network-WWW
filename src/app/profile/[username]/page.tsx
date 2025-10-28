@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   Calendar, 
@@ -26,10 +27,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatTimeAgo } from '@/lib/date-utils';
 import { AddFriendButton } from '@/components/friends/add-friend-button';
-
-interface ProfilePageProps {
-  params: { username: string };
-}
 
 interface UserProfile {
   id: number;
@@ -81,9 +78,10 @@ interface ForumPost {
   };
 }
 
-export default function ProfilePage({ params }: ProfilePageProps) {
+export default function ProfilePage() {
   const { data: session } = useSession();
-  const username = decodeURIComponent(params.username);
+  const params = useParams();
+  const username = decodeURIComponent(params.username as string);
   
   const [user, setUser] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -141,7 +139,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
       // Fetch donation rank if user has one
       if (data.user.donationRankId) {
-        const rankResponse = await fetch(`/api/admin/donor-ranks`);
+        const rankResponse = await fetch(`/api/donor-ranks`);
         if (rankResponse.ok) {
           const ranks = await rankResponse.json();
           const rank = ranks.find((r: DonationRank) => r.id === data.user.donationRankId);

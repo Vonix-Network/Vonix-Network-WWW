@@ -7,7 +7,7 @@ import { eq, and } from 'drizzle-orm';
 // PATCH /api/notifications/[id] - Mark notification as read
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -15,7 +15,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const notificationId = parseInt(params.id);
+    const resolvedParams = await params;
+    const notificationId = parseInt(resolvedParams.id);
     if (isNaN(notificationId)) {
       return NextResponse.json({ error: 'Invalid notification ID' }, { status: 400 });
     }
@@ -49,7 +50,7 @@ export async function PATCH(
 // DELETE /api/notifications/[id] - Delete notification
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -57,7 +58,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const notificationId = parseInt(params.id);
+    const resolvedParams = await params;
+    const notificationId = parseInt(resolvedParams.id);
     if (isNaN(notificationId)) {
       return NextResponse.json({ error: 'Invalid notification ID' }, { status: 400 });
     }

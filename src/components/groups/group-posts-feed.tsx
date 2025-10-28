@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Image as ImageIcon, Send, MoreVertical, Pin, Trash2, MessageCircle, Heart, Edit, X } from 'lucide-react';
+import { Image as ImageIcon, Send, MoreVertical, Pin, Trash2, MessageCircle, Heart, Edit, X, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import { ReportButton } from '@/components/shared/report-button';
 import { GroupPostComments } from './group-post-comments';
@@ -23,7 +23,17 @@ interface GroupPost {
     avatar: string | null;
     role: string;
     level: number;
+    donationRankId: string | null;
   };
+}
+
+interface DonationRank {
+  id: string;
+  name: string;
+  color: string;
+  textColor: string;
+  badge: string | null;
+  glow: boolean;
 }
 
 interface GroupPostsFeedProps {
@@ -54,6 +64,7 @@ export function GroupPostsFeed({ groupId, userRole }: GroupPostsFeedProps) {
   const [editingPost, setEditingPost] = useState<number | null>(null);
   const [editContent, setEditContent] = useState('');
   const [editImage, setEditImage] = useState('');
+  const [donationRanks, setDonationRanks] = useState<Map<string, DonationRank>>(new Map());
   
   // Create post state
   const [newPostContent, setNewPostContent] = useState('');
@@ -62,6 +73,17 @@ export function GroupPostsFeed({ groupId, userRole }: GroupPostsFeedProps) {
   
   // Action menu state
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
+
+  // Fetch donation ranks
+  useEffect(() => {
+    fetch('/api/donor-ranks')
+      .then(res => res.json())
+      .then((ranks: DonationRank[]) => {
+        const rankMap = new Map<string, DonationRank>(ranks.map(r => [r.id, r]));
+        setDonationRanks(rankMap);
+      })
+      .catch(console.error);
+  }, []);
 
   const fetchPosts = async () => {
     try {
@@ -280,8 +302,33 @@ export function GroupPostsFeed({ groupId, userRole }: GroupPostsFeedProps) {
                     className="w-12 h-12 rounded-lg pixelated"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-bold text-white">{post.author.username}</span>
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span 
+                        className="font-bold"
+                        style={{
+                          color: post.author.donationRankId && donationRanks.has(post.author.donationRankId)
+                            ? (donationRanks.get(post.author.donationRankId)!.textColor !== '#000000' && donationRanks.get(post.author.donationRankId)!.textColor !== '#000'
+                              ? donationRanks.get(post.author.donationRankId)!.textColor
+                              : '#ffffff')
+                            : '#ffffff'
+                        }}
+                      >
+                        {post.author.username}
+                      </span>
+                      {post.author.donationRankId && donationRanks.has(post.author.donationRankId) && (
+                        <span 
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold"
+                          style={{
+                            backgroundColor: donationRanks.get(post.author.donationRankId)!.color + '20',
+                            color: (donationRanks.get(post.author.donationRankId)!.textColor !== '#000000' && donationRanks.get(post.author.donationRankId)!.textColor !== '#000') ? donationRanks.get(post.author.donationRankId)!.textColor : '#ffffff',
+                            borderColor: donationRanks.get(post.author.donationRankId)!.color + '60',
+                            border: '1px solid'
+                          }}
+                        >
+                          <Crown className="w-3 h-3" />
+                          {donationRanks.get(post.author.donationRankId)!.badge || donationRanks.get(post.author.donationRankId)!.name}
+                        </span>
+                      )}
                       <span className="text-xs text-slate-500">
                         {new Date(post.createdAt).toLocaleDateString()}
                       </span>

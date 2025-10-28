@@ -16,7 +16,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 interface CategoryPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {

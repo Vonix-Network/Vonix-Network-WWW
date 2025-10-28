@@ -13,11 +13,12 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 interface ServerPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 async function ServerContent({ params }: ServerPageProps) {
-  const serverId = parseInt(params.id);
+  const resolvedParams = await params;
+  const serverId = parseInt(resolvedParams.id);
 
   if (isNaN(serverId)) {
     notFound();

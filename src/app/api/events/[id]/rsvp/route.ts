@@ -9,7 +9,7 @@ import { notifyEventInvite } from '@/lib/notifications';
 // POST /api/events/[id]/rsvp - RSVP to event
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -17,7 +17,8 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const eventId = parseInt(params.id);
+    const resolvedParams = await params;
+    const eventId = parseInt(resolvedParams.id);
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
@@ -80,7 +81,7 @@ export async function POST(
     console.error('Error creating RSVP:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
+        { error: 'Invalid input', details: error.issues },
         { status: 400 }
       );
     }
@@ -94,7 +95,7 @@ export async function POST(
 // DELETE /api/events/[id]/rsvp - Cancel RSVP
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -102,7 +103,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const eventId = parseInt(params.id);
+    const resolvedParams = await params;
+    const eventId = parseInt(resolvedParams.id);
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }

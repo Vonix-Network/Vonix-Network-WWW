@@ -5,10 +5,11 @@ import { eq, sql } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { username: string } }
+  { params }: { params: Promise<{ username: string }> }
 ) {
   try {
-    const username = decodeURIComponent(params.username);
+    const resolvedParams = await params;
+    const username = decodeURIComponent(resolvedParams.username);
 
     // First get the user
     const [user] = await db

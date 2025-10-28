@@ -15,14 +15,15 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 interface EventPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 async function EventContent({ params }: EventPageProps) {
   const session = await getServerSession(authOptions);
-  const eventId = parseInt(params.id);
+  const resolvedParams = await params;
+  const eventId = parseInt(resolvedParams.id);
 
   if (isNaN(eventId)) {
     notFound();

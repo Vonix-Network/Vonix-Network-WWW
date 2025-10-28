@@ -5,10 +5,11 @@ import { eq, desc, sql, count } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { username: string } }
+  { params }: { params: Promise<{ username: string }> }
 ) {
   try {
-    const username = decodeURIComponent(params.username);
+    const resolvedParams = await params;
+    const username = decodeURIComponent(resolvedParams.username);
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');

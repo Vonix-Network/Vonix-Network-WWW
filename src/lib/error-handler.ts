@@ -89,7 +89,7 @@ export function handleError(error: unknown, context?: string): NextResponse {
       {
         error: 'Validation failed',
         code: 'VALIDATION_ERROR',
-        details: error.errors.map(e => ({
+        details: error.issues.map(e => ({
           path: e.path.join('.'),
           message: e.message,
         })),

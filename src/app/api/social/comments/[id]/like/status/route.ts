@@ -7,7 +7,7 @@ import { eq, and } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,7 +17,8 @@ export async function GET(
       return NextResponse.json({ isLiked: false });
     }
 
-    const commentId = parseInt(params.id);
+    const resolvedParams = await params;
+    const commentId = parseInt(resolvedParams.id);
     if (isNaN(commentId)) {
       return NextResponse.json(
         { error: 'Invalid comment ID' },

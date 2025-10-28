@@ -12,7 +12,7 @@ const pinSchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -31,7 +31,8 @@ export async function PATCH(
       );
     }
 
-    const postId = parseInt(params.id);
+    const resolvedParams = await params;
+    const postId = parseInt(resolvedParams.id);
     if (isNaN(postId)) {
       return NextResponse.json(
         { error: 'Invalid post ID' },

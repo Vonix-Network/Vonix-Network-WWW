@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 interface NewMessagePageProps {
-  searchParams: { to?: string };
+  searchParams: Promise<{ to?: string }>;
 }
 
 export default async function NewMessagePage({ searchParams }: NewMessagePageProps) {
@@ -18,7 +18,8 @@ export default async function NewMessagePage({ searchParams }: NewMessagePagePro
     redirect('/auth/signin');
   }
 
-  const toUsername = searchParams.to;
+  const resolvedSearchParams = await searchParams;
+  const toUsername = resolvedSearchParams.to;
 
   if (!toUsername) {
     // No username provided, redirect to messages page

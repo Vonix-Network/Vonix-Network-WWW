@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { users, donationRanks } from '@/db/schema';
 import { desc } from 'drizzle-orm';
 import { Zap, Crown, Medal } from 'lucide-react';
 import { getTitleForLevel, getColorForLevel } from '@/lib/xp-utils';
@@ -61,10 +61,15 @@ async function XPLeaderboardContent() {
       level: users.level,
       title: users.title,
       role: users.role,
+      donationRankId: users.donationRankId,
     })
     .from(users)
     .orderBy(desc(users.xp))
     .limit(100);
+
+  // Get donation ranks for badge display
+  const ranks = await db.select().from(donationRanks);
+  const rankMap = new Map(ranks.map(r => [r.id, r]));
 
   // Enhance with colors and titles
   const enhancedLeaderboard = leaderboard.map((user, index) => ({
@@ -72,6 +77,7 @@ async function XPLeaderboardContent() {
     rank: index + 1,
     title: user.title || getTitleForLevel(user.level),
     levelColor: getColorForLevel(user.level),
+    donationRank: user.donationRankId && rankMap.has(user.donationRankId) ? rankMap.get(user.donationRankId) : null,
   }));
 
   // Separate top 3 for podium
@@ -154,9 +160,31 @@ async function XPLeaderboardContent() {
                         </div>
 
                         {/* User Info */}
-                        <h3 className={`${actualRank === 1 ? 'text-xl' : 'text-lg'} font-bold text-white mb-1`}>
+                        <h3 
+                          className={`${actualRank === 1 ? 'text-xl' : 'text-lg'} font-bold mb-1`}
+                          style={{
+                            color: user.donationRank
+                              ? (user.donationRank.textColor !== '#000000' && user.donationRank.textColor !== '#000'
+                                ? user.donationRank.textColor
+                                : '#ffffff')
+                              : '#ffffff'
+                          }}
+                        >
                           {user.username}
                         </h3>
+                        {user.donationRank && (
+                          <div 
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold mb-1"
+                            style={{
+                              backgroundColor: user.donationRank.color + '20',
+                              color: (user.donationRank.textColor !== '#000000' && user.donationRank.textColor !== '#000') ? user.donationRank.textColor : '#ffffff',
+                              border: `1px solid ${user.donationRank.color}60`,
+                            }}
+                          >
+                            <Crown className="h-3 w-3" />
+                            {user.donationRank.badge || user.donationRank.name}
+                          </div>
+                        )}
                         <p className="text-sm text-gray-400 mb-2">{user.title}</p>
                       </div>
 
@@ -219,10 +247,32 @@ async function XPLeaderboardContent() {
 
                   {/* User Info */}
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-lg font-bold text-white">
+                    <div className="flex items-center gap-3 mb-1 flex-wrap">
+                      <h3 
+                        className="text-lg font-bold"
+                        style={{
+                          color: user.donationRank
+                            ? (user.donationRank.textColor !== '#000000' && user.donationRank.textColor !== '#000'
+                              ? user.donationRank.textColor
+                              : '#ffffff')
+                            : '#ffffff'
+                        }}
+                      >
                         {user.username}
                       </h3>
+                      {user.donationRank && (
+                        <span 
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold"
+                          style={{
+                            backgroundColor: user.donationRank.color + '20',
+                            color: (user.donationRank.textColor !== '#000000' && user.donationRank.textColor !== '#000') ? user.donationRank.textColor : '#ffffff',
+                            border: `1px solid ${user.donationRank.color}60`,
+                          }}
+                        >
+                          <Crown className="h-3 w-3" />
+                          {user.donationRank.badge || user.donationRank.name}
+                        </span>
+                      )}
                       <LevelBadge
                         level={user.level}
                         levelColor={user.levelColor}

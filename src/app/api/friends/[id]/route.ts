@@ -9,7 +9,7 @@ import { awardXP, XP_REWARDS } from '@/lib/xp-system';
 // PATCH /api/friends/[id] - Accept/reject friend request
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -17,8 +17,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const resolvedParams = await params;
     const userId = parseInt(session.user.id);
-    const friendshipId = parseInt(params.id);
+    const friendshipId = parseInt(resolvedParams.id);
     
     if (isNaN(friendshipId)) {
       return NextResponse.json({ error: 'Invalid friendship ID' }, { status: 400 });
@@ -110,7 +111,7 @@ export async function PATCH(
 // DELETE /api/friends/[id] - Remove friend
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -118,8 +119,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const resolvedParams = await params;
     const userId = parseInt(session.user.id);
-    const friendshipId = parseInt(params.id);
+    const friendshipId = parseInt(resolvedParams.id);
     
     if (isNaN(friendshipId)) {
       return NextResponse.json({ error: 'Invalid friendship ID' }, { status: 400 });

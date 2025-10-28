@@ -17,7 +17,7 @@ const updateReportSchema = z.object({
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,7 +25,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const reportId = parseInt(params.id);
+    const resolvedParams = await params;
+    const reportId = parseInt(resolvedParams.id);
     if (isNaN(reportId)) {
       return NextResponse.json({ error: 'Invalid report ID' }, { status: 400 });
     }
@@ -84,7 +85,7 @@ export async function PATCH(
     return NextResponse.json(updatedReport[0]);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error('Error updating report:', error);
     return NextResponse.json({ error: 'Failed to update report' }, { status: 500 });
@@ -96,7 +97,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -104,7 +105,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized - Admin only' }, { status: 403 });
     }
 
-    const reportId = parseInt(params.id);
+    const resolvedParams = await params;
+    const reportId = parseInt(resolvedParams.id);
     if (isNaN(reportId)) {
       return NextResponse.json({ error: 'Invalid report ID' }, { status: 400 });
     }

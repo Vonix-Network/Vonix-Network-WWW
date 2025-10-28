@@ -13,12 +13,13 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 interface MessagesPageProps {
-  searchParams: { thread?: string };
+  searchParams: Promise<{ thread?: string }>;
 }
 
 async function MessagesContent({ searchParams, session }: { searchParams: MessagesPageProps['searchParams'], session: any }) {
   const userId = parseInt(session!.user.id);
-  const selectedThreadUserId = searchParams.thread ? parseInt(searchParams.thread) : null;
+  const resolvedSearchParams = await searchParams;
+  const selectedThreadUserId = resolvedSearchParams.thread ? parseInt(resolvedSearchParams.thread) : null;
 
   // Get conversations (unique users we've messaged with)
   const conversations = await db

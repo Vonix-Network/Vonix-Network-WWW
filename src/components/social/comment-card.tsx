@@ -93,7 +93,7 @@ export function CommentCard({
   // Fetch donation rank if user has one
   useEffect(() => {
     if (comment.author?.donationRankId) {
-      fetch('/api/admin/donor-ranks')
+      fetch('/api/donor-ranks')
         .then(res => res.json())
         .then(ranks => {
           const rank = ranks.find((r: DonationRank) => r.id === comment.author.donationRankId);

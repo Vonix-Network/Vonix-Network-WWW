@@ -20,7 +20,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 interface PostPageProps {
-  params: { slug: string; id: string };
+  params: Promise<{ slug: string; id: string }>;
 }
 
 export default async function PostPage({ params }: PostPageProps) {

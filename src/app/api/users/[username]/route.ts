@@ -8,10 +8,11 @@ export const revalidate = 0;
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { username: string } }
+  { params }: { params: Promise<{ username: string }> }
 ) {
   try {
-    const username = decodeURIComponent(params.username);
+    const resolvedParams = await params;
+    const username = decodeURIComponent(resolvedParams.username);
     
     // Add no-cache headers to prevent stale data
     const headers = {
@@ -29,6 +30,9 @@ export async function GET(
         avatar: users.avatar,
         role: users.role,
         bio: users.bio,
+        donationRankId: users.donationRankId,
+        rankExpiresAt: users.rankExpiresAt,
+        totalDonated: users.totalDonated,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       })

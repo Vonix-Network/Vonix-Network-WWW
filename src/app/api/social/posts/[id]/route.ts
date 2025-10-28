@@ -6,7 +6,7 @@ import { eq, and } from 'drizzle-orm';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -15,7 +15,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const postId = parseInt(params.id);
+    const resolvedParams = await params;
+    const postId = parseInt(resolvedParams.id);
     if (isNaN(postId)) {
       return NextResponse.json({ error: 'Invalid post ID' }, { status: 400 });
     }

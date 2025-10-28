@@ -9,12 +9,13 @@ export const revalidate = 0;
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     noStore();
 
-    const categoryId = parseInt(params.id);
+    const resolvedParams = await params;
+    const categoryId = parseInt(resolvedParams.id);
     if (isNaN(categoryId)) {
       return NextResponse.json({ error: 'Invalid category ID' }, { status: 400 });
     }

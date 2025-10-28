@@ -17,7 +17,7 @@ const updatePostSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; postId: string } }
+  { params }: { params: Promise<{ id: string; postId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,7 +25,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const postId = parseInt(params.postId);
+    const resolvedParams = await params;
+    const postId = parseInt(resolvedParams.postId);
     if (isNaN(postId)) {
       return NextResponse.json({ error: 'Invalid post ID' }, { status: 400 });
     }
@@ -72,7 +73,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; postId: string } }
+  { params }: { params: Promise<{ id: string; postId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -80,8 +81,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = parseInt(params.id);
-    const postId = parseInt(params.postId);
+    const resolvedParams = await params;
+    const groupId = parseInt(resolvedParams.id);
+    const postId = parseInt(resolvedParams.postId);
     
     if (isNaN(groupId) || isNaN(postId)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
@@ -170,7 +172,7 @@ export async function PATCH(
     return NextResponse.json(updatedPost);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
     console.error('Error updating post:', error);
     return NextResponse.json({ error: 'Failed to update post' }, { status: 500 });
@@ -183,7 +185,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; postId: string } }
+  { params }: { params: Promise<{ id: string; postId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -191,8 +193,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = parseInt(params.id);
-    const postId = parseInt(params.postId);
+    const resolvedParams = await params;
+    const groupId = parseInt(resolvedParams.id);
+    const postId = parseInt(resolvedParams.postId);
     
     if (isNaN(groupId) || isNaN(postId)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });

@@ -13,10 +13,11 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const groupId = parseInt(params.id);
+    const resolvedParams = await params;
+    const groupId = parseInt(resolvedParams.id);
     const session = await getServerSession(authOptions);
 
     // Get group details
@@ -81,7 +82,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -89,7 +90,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = parseInt(params.id);
+    const resolvedParams = await params;
+    const groupId = parseInt(resolvedParams.id);
     const userId = parseInt(session.user.id);
     const body = await request.json();
 
@@ -147,7 +149,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -155,7 +157,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = parseInt(params.id);
+    const resolvedParams = await params;
+    const groupId = parseInt(resolvedParams.id);
     const userId = parseInt(session.user.id);
 
     // Get group

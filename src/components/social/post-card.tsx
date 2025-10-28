@@ -54,7 +54,7 @@ export function PostCard({ post, isLiked: initialIsLiked, currentUserId, userRol
   // Fetch donation rank if user has one
   useEffect(() => {
     if (post.author?.donationRankId) {
-      fetch('/api/admin/donor-ranks')
+      fetch('/api/donor-ranks')
         .then(res => res.json())
         .then(ranks => {
           const rank = ranks.find((r: DonationRank) => r.id === post.author?.donationRankId);

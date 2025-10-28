@@ -13,12 +13,13 @@ export const revalidate = 0;
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAdmin();
 
-    const donationId = parseInt(params.id);
+    const resolvedParams = await params;
+    const donationId = parseInt(resolvedParams.id);
     if (isNaN(donationId)) {
       return NextResponse.json({ error: 'Invalid donation ID' }, { status: 400 });
     }
@@ -55,12 +56,13 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAdmin();
 
-    const donationId = parseInt(params.id);
+    const resolvedParams = await params;
+    const donationId = parseInt(resolvedParams.id);
     if (isNaN(donationId)) {
       return NextResponse.json({ error: 'Invalid donation ID' }, { status: 400 });
     }

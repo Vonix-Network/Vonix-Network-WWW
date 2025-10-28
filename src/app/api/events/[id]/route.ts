@@ -8,10 +8,11 @@ import { z } from 'zod';
 // GET /api/events/[id] - Get event details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const eventId = parseInt(params.id);
+    const resolvedParams = await params;
+    const eventId = parseInt(resolvedParams.id);
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
@@ -78,7 +79,7 @@ export async function GET(
 // PATCH /api/events/[id] - Update event
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -86,7 +87,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const eventId = parseInt(params.id);
+    const resolvedParams = await params;
+    const eventId = parseInt(resolvedParams.id);
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }
@@ -151,7 +153,7 @@ export async function PATCH(
     console.error('Error updating event:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
+        { error: 'Invalid input', details: error.issues },
         { status: 400 }
       );
     }
@@ -165,7 +167,7 @@ export async function PATCH(
 // DELETE /api/events/[id] - Delete event
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -173,7 +175,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const eventId = parseInt(params.id);
+    const resolvedParams = await params;
+    const eventId = parseInt(resolvedParams.id);
     if (isNaN(eventId)) {
       return NextResponse.json({ error: 'Invalid event ID' }, { status: 400 });
     }

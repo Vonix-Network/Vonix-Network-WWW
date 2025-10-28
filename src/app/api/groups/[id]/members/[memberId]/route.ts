@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; memberId: string } }
+  { params }: { params: Promise<{ id: string; memberId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,8 +21,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = parseInt(params.id);
-    const memberId = parseInt(params.memberId);
+    const resolvedParams = await params;
+    const groupId = parseInt(resolvedParams.id);
+    const memberId = parseInt(resolvedParams.memberId);
     const userId = parseInt(session.user.id);
     const body = await request.json();
     const { role } = body;
@@ -102,7 +103,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; memberId: string } }
+  { params }: { params: Promise<{ id: string; memberId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -110,8 +111,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = parseInt(params.id);
-    const memberId = parseInt(params.memberId);
+    const resolvedParams = await params;
+    const groupId = parseInt(resolvedParams.id);
+    const memberId = parseInt(resolvedParams.memberId);
     const userId = parseInt(session.user.id);
 
     // Check requester's permissions

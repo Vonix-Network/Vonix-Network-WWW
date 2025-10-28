@@ -10,7 +10,7 @@ import { eq, and } from 'drizzle-orm';
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string; postId: string } }
+  { params }: { params: Promise<{ id: string; postId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,8 +18,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = parseInt(params.id);
-    const postId = parseInt(params.postId);
+    const resolvedParams = await params;
+    const groupId = parseInt(resolvedParams.id);
+    const postId = parseInt(resolvedParams.postId);
     const userId = Number(session.user.id);
 
     if (isNaN(groupId) || isNaN(postId)) {

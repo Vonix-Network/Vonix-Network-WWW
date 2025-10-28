@@ -9,13 +9,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 
 interface EditCategoryPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function EditCategoryPage({ params }: EditCategoryPageProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -28,11 +29,21 @@ export default function EditCategoryPage({ params }: EditCategoryPageProps) {
   });
 
   useEffect(() => {
+    const resolveParams = async () => {
+      const resolved = await params;
+      setResolvedParams(resolved);
+    };
+    resolveParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (!resolvedParams?.id) return;
+
     const fetchCategory = async () => {
       try {
-        const response = await fetch(`/api/forum/categories/${params.id}`);
+        const response = await fetch(`/api/forum/categories/${resolvedParams.id}`);
         if (!response.ok) throw new Error('Failed to fetch category');
-        
+
         const category = await response.json();
         setFormData({
           name: category.name || '',
@@ -51,14 +62,16 @@ export default function EditCategoryPage({ params }: EditCategoryPageProps) {
     };
 
     fetchCategory();
-  }, [params.id]);
+  }, [resolvedParams?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/forum/categories/${params.id}`, {
+      if (!resolvedParams?.id) throw new Error('Category ID not available');
+
+      const response = await fetch(`/api/forum/categories/${resolvedParams.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -85,7 +98,9 @@ export default function EditCategoryPage({ params }: EditCategoryPageProps) {
 
     setIsDeleting(true);
     try {
-      const response = await fetch(`/api/forum/categories/${params.id}`, {
+      if (!resolvedParams?.id) throw new Error('Category ID not available');
+
+      const response = await fetch(`/api/forum/categories/${resolvedParams.id}`, {
         method: 'DELETE',
       });
 

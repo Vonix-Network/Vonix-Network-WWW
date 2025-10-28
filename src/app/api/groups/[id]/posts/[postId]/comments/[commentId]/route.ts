@@ -10,7 +10,7 @@ import { eq, and } from 'drizzle-orm';
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; postId: string; commentId: string } }
+  { params }: { params: Promise<{ id: string; postId: string; commentId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,9 +18,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const groupId = parseInt(params.id);
-    const postId = parseInt(params.postId);
-    const commentId = parseInt(params.commentId);
+    const resolvedParams = await params;
+    const groupId = parseInt(resolvedParams.id);
+    const postId = parseInt(resolvedParams.postId);
+    const commentId = parseInt(resolvedParams.commentId);
     const userId = Number(session.user.id);
 
     if (isNaN(groupId) || isNaN(postId) || isNaN(commentId)) {

@@ -8,12 +8,13 @@ import { z } from 'zod';
 // GET /api/blog/[slug] - Get single blog post
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const session = await getServerSession();
     const isAdmin = session?.user?.role === 'admin';
 
+    const resolvedParams = await params;
     const [post] = await db
       .select({
         id: blogPosts.id,
@@ -34,7 +35,7 @@ export async function GET(
       })
       .from(blogPosts)
       .leftJoin(users, eq(users.id, blogPosts.authorId))
-      .where(eq(blogPosts.slug, params.slug))
+      .where(eq(blogPosts.slug, resolvedParams.slug))
       .limit(1);
 
     if (!post) {
@@ -59,7 +60,7 @@ export async function GET(
 // PATCH /api/blog/[slug] - Update blog post (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -67,8 +68,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    const resolvedParams = await params;
     const body = await request.json();
-    
+
     const schema = z.object({
       title: z.string().min(1).max(200).optional(),
       slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/).optional(),
@@ -81,7 +83,7 @@ export async function PATCH(
     const data = schema.parse(body);
 
     // If changing slug, check if new slug exists
-    if (data.slug && data.slug !== params.slug) {
+    if (data.slug && data.slug !== resolvedParams.slug) {
       const existing = await db
         .select()
         .from(blogPosts)
@@ -102,7 +104,7 @@ export async function PATCH(
         ...data,
         updatedAt: new Date(),
       })
-      .where(eq(blogPosts.slug, params.slug))
+      .where(eq(blogPosts.slug, resolvedParams.slug))
       .returning();
 
     if (!updated) {
@@ -114,7 +116,7 @@ export async function PATCH(
     console.error('Error updating blog post:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
+        { error: 'Invalid input', details: error.issues },
         { status: 400 }
       );
     }
@@ -128,7 +130,7 @@ export async function PATCH(
 // DELETE /api/blog/[slug] - Delete blog post (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -136,9 +138,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    const resolvedParams = await params;
     await db
       .delete(blogPosts)
-      .where(eq(blogPosts.slug, params.slug));
+      .where(eq(blogPosts.slug, resolvedParams.slug));
 
     return NextResponse.json({ success: true });
   } catch (error) {

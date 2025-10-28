@@ -10,13 +10,13 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession();
-    
+
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -24,7 +24,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const serverId = parseInt(params.id);
+    const resolvedParams = await params;
+    const serverId = parseInt(resolvedParams.id);
     
     if (isNaN(serverId)) {
       return NextResponse.json(
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession();
-    
+
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -73,7 +74,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const serverId = parseInt(params.id);
+    const resolvedParams = await params;
+    const serverId = parseInt(resolvedParams.id);
     
     if (isNaN(serverId)) {
       return NextResponse.json(
@@ -143,7 +145,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession();
-    
+
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -151,7 +153,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const serverId = parseInt(params.id);
+    const resolvedParams = await params;
+    const serverId = parseInt(resolvedParams.id);
     
     if (isNaN(serverId)) {
       return NextResponse.json(

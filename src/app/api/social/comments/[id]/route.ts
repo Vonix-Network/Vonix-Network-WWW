@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,7 +18,8 @@ export async function DELETE(
       );
     }
 
-    const commentId = parseInt(params.id);
+    const resolvedParams = await params;
+    const commentId = parseInt(resolvedParams.id);
     if (isNaN(commentId)) {
       return NextResponse.json(
         { error: 'Invalid comment ID' },
@@ -88,7 +89,7 @@ export async function DELETE(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -99,7 +100,8 @@ export async function PATCH(
       );
     }
 
-    const commentId = parseInt(params.id);
+    const resolvedParams = await params;
+    const commentId = parseInt(resolvedParams.id);
     if (isNaN(commentId)) {
       return NextResponse.json(
         { error: 'Invalid comment ID' },
