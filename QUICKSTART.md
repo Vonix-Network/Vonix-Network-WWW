@@ -9,7 +9,7 @@ Get up and running in 5 minutes!
 ### 1️⃣ Clone & Install
 ```bash
 git clone <your-repo-url>
-cd Vonix-Network-WWW
+cd Vonix-Network-WWW-2.0
 npm install
 ```
 
@@ -48,7 +48,7 @@ Visit **http://localhost:3000** 🎉
 
 **Read First:** [AI_GUIDE.md](AI_GUIDE.md)
 
-**Project Type:** Next.js 14 + TypeScript + Turso + Drizzle ORM
+**Project Type:** Next.js 15 + React 19 + TypeScript + Turso + Drizzle ORM
 
 **Key Files:**
 - `src/db/schema.ts` - Database schema
@@ -88,6 +88,7 @@ await awardXP(userId, XP_REWARDS.POST_CREATE, 'post_create', postId);
 | **AI_GUIDE.md** | Complete guide for AI assistants |
 | **SETUP_CHECKLIST.md** | Validation checklist |
 | **QUICKSTART.md** | This file - getting started |
+| **DONATION_RANK_FIX_SUMMARY.md** | Donation rank/badge system summary |
 | **src/db/README.md** | Database management |
 | **docs/XP_INTEGRATION_GUIDE.md** | XP system documentation |
 
@@ -154,6 +155,7 @@ npm run dev
 # http://localhost:3000              - Homepage
 # http://localhost:3000/achievements - Achievements
 # http://localhost:3000/leaderboard  - XP Leaderboard
+# http://localhost:3000/profile/YourName - User profile (donation rank badge)
 # http://localhost:3000/api/xp       - XP API
 ```
 
