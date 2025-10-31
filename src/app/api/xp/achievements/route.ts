@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+
+import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { achievements, userAchievements } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 // GET /api/xp/achievements - Get achievements and user progress
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     if (!session?.user?.id) {
       return NextResponse.json(

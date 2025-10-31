@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { auth } from '../auth';
 
 export async function middleware(request: NextRequest) {
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const session = await auth();
   const { pathname } = request.nextUrl;
+  const token = session?.user;
 
   // Create response
   let response = NextResponse.next();
@@ -30,7 +31,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/admin')) {
     if (!token) {
       response = NextResponse.redirect(new URL('/login', request.url));
-    } else if (token.role !== 'admin') {
+    } else if ((token as any).role !== 'admin') {
       response = NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
@@ -39,7 +40,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/moderation')) {
     if (!token) {
       response = NextResponse.redirect(new URL('/login', request.url));
-    } else if (token.role !== 'admin' && token.role !== 'moderator') {
+    } else if ((token as any).role !== 'admin' && (token as any).role !== 'moderator') {
       response = NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }

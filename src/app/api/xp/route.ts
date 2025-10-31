@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+
+import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { users, xpTransactions } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 // GET /api/xp - Get current user's XP data
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     if (!session?.user?.id) {
       return NextResponse.json(

@@ -7,8 +7,7 @@ import { events, users, eventAttendees } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { formatDate } from '@/lib/utils';
 import { EventRSVPButton } from '@/components/events/event-rsvp-button';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -21,7 +20,7 @@ interface EventPageProps {
 }
 
 async function EventContent({ params }: EventPageProps) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   const resolvedParams = await params;
   const eventId = parseInt(resolvedParams.id);
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getXPLeaderboard, getUserRank, getTitleForLevel, getColorForLevel } from '@/lib/xp-system';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+
+import { auth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Get current user's rank if logged in
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     let userRank = null;
     
     if (session?.user?.id) {

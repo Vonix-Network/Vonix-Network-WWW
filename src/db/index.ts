@@ -1,9 +1,3 @@
-import { config } from 'dotenv';
-import { resolve } from 'path';
-
-// Load environment variables from .env file
-config({ path: resolve(process.cwd(), '.env') });
-
 import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from '@libsql/client';
 import * as schema from './schema';
@@ -29,13 +23,13 @@ export const db = drizzle(client, { schema });
 export { client };
 
 // Run automatic migrations on import (only in server context) and expose a promise to await where necessary
-// Use global variable to prevent multiple migration calls
+// Use globalThis variable to prevent multiple migration calls (Edge Runtime compatible)
 declare global {
   var __migrationPromise: Promise<void> | undefined;
 }
 
 export const migrationReady: Promise<void> = typeof window === 'undefined'
-  ? (global.__migrationPromise ||= import('./auto-migrate')
+  ? (globalThis.__migrationPromise ||= import('./auto-migrate')
       .then(({ autoMigrate }) => autoMigrate())
       .catch((err) => {
         console.error(err);
