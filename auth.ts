@@ -28,6 +28,7 @@ function checkRateLimit(key: string, maxRequests: number, windowMs: number) {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true, // Trust all hosts - required for multiple domains
   providers: [
     Credentials({
       name: 'Credentials',

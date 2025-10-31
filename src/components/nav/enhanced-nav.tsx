@@ -216,7 +216,7 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
                       
                       {openDropdown === item.label && (
                         <div className="absolute left-0 top-full pt-2 w-56 z-50">
-                          <div className="glass border border-brand-cyan/20 rounded-lg shadow-xl shadow-brand-cyan/10 overflow-hidden">
+                          <div className="bg-gray-900 border border-brand-cyan/20 rounded-lg shadow-xl shadow-brand-cyan/10 overflow-hidden">
                           {item.dropdown.map((subItem) => {
                             const SubIcon = subItem.icon;
                             return (
@@ -309,7 +309,7 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
                       </button>
                       
                       {isUserMenuOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-52 glass border border-brand-cyan/20 rounded-lg shadow-xl shadow-brand-cyan/10 z-50 overflow-hidden">
+                        <div className="absolute right-0 top-full mt-2 w-52 bg-gray-900 border border-brand-cyan/20 rounded-lg shadow-xl shadow-brand-cyan/10 z-50 overflow-hidden">
                           <Link
                             href={`/profile/${user.username || user.id}`}
                             className="flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:text-brand-cyan hover:bg-brand-cyan/5 transition-colors border-b border-white/10"
