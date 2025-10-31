@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/auth';
-import { UnifiedNav } from '@/components/nav/unified-nav';
+import { EnhancedNav } from '@/components/nav/enhanced-nav';
 import BackgroundWrapper from '@/components/backgrounds/BackgroundWrapper';
 
 // Force dynamic rendering - NO CACHING
@@ -24,7 +24,7 @@ export default async function DashboardLayout({
       {/* Admin-Configurable Animated Background - Remounts on route change */}
       <BackgroundWrapper />
 
-      <UnifiedNav user={session.user} />
+      <EnhancedNav user={session.user} />
       <main className="container mx-auto px-4 py-8">
         {children}
       </main>

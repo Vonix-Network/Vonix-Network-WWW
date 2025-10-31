@@ -50,6 +50,13 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        brand: {
+          cyan: '#00D9FF',
+          blue: '#3B82F6',
+          purple: '#8B5CF6',
+          pink: '#EC4899',
+          orange: '#F97316',
+        },
         minecraft: {
           blue: '#3b82f6',
           purple: '#8b5cf6',

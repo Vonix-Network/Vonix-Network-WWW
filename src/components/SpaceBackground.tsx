@@ -25,7 +25,7 @@ export default function SpaceBackground({
   className = '',
   particles = 150,
   speed = 0.5,
-  gradient = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#ef4444'],
+  gradient = ['#00D9FF', '#3B82F6', '#8B5CF6', '#EC4899', '#F97316'],
   size = { min: 1, max: 3 },
   opacity = { min: 0.1, max: 0.8 },
   connectionDistance = 100,

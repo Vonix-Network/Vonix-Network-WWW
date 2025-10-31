@@ -132,7 +132,7 @@
 /* Logo-inspired gradient border */
 .logo-gradient-border {
   position: relative;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 25%, #ec4899 50%, #f97316 75%, #ef4444 100%);
+  background: linear-gradient(135deg, #00D9FF 0%, #3B82F6 25%, #8B5CF6 50%, #EC4899 75%, #F97316 100%);
   background-size: 200% 200%;
   animation: gradient-x 8s ease infinite;
 }
@@ -142,7 +142,7 @@
   position: absolute;
   inset: 0;
   padding: 2px;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 25%, #ec4899 50%, #f97316 75%, #ef4444 100%);
+  background: linear-gradient(135deg, #00D9FF 0%, #3B82F6 25%, #8B5CF6 50%, #EC4899 75%, #F97316 100%);
   background-size: 200% 200%;
   animation: gradient-x 8s ease infinite;
   border-radius: inherit;
@@ -164,7 +164,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 25%, #ec4899 50%, #f97316 75%, #ef4444 100%);
+  background: linear-gradient(180deg, #00D9FF 0%, #3B82F6 25%, #8B5CF6 50%, #EC4899 75%, #F97316 100%);
   background-size: 100% 200%;
   animation: gradient-y 6s ease infinite;
   border-radius: 0 4px 4px 0;
@@ -272,14 +272,14 @@
 
 /* Gradient Text */
 .gradient-text {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 25%, #ec4899 50%, #f97316 75%, #ef4444 100%);
+  background: linear-gradient(135deg, #00D9FF 0%, #3B82F6 25%, #8B5CF6 50%, #EC4899 75%, #F97316 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .gradient-text-animated {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 20%, #ec4899 40%, #f97316 60%, #ef4444 80%, #3b82f6 100%);
+  background: linear-gradient(135deg, #00D9FF 0%, #3B82F6 20%, #8B5CF6 40%, #EC4899 60%, #F97316 80%, #00D9FF 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -307,7 +307,7 @@
   content: '';
   position: absolute;
   inset: -2px;
-  background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899, #f97316, #ef4444, #3b82f6);
+  background: linear-gradient(45deg, #00D9FF, #3B82F6, #8B5CF6, #EC4899, #F97316, #00D9FF);
   background-size: 400% 400%;
   animation: gradient-xy 6s ease infinite;
   border-radius: 0.5rem;

@@ -115,7 +115,7 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
 
   return (
     <>
-      <nav className="glass border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
+      <nav className="glass border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl bg-black/30">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -145,8 +145,8 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                       isActive
-                        ? "text-cyan-400 bg-cyan-400/10 shadow-lg shadow-green-500/20"
-                        : "text-gray-300 hover:text-cyan-400 hover:bg-white/5"
+                        ? "text-brand-cyan bg-brand-cyan/10 shadow-lg shadow-brand-cyan/30 border border-brand-cyan/20"
+                        : "text-gray-300 hover:text-brand-cyan hover:bg-white/5"
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -169,24 +169,24 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                       <div className="relative" ref={moderationRef}>
                         <button
                           onClick={() => setIsModerationOpen(!isModerationOpen)}
-                          className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                          className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-brand-cyan hover:bg-white/5 transition-all"
                         >
                           <Shield className="h-4 w-4" />
                           <span className="hidden sm:inline">Moderation</span>
                           <ChevronDown className={cn("h-3 w-3 transition-transform", isModerationOpen && "rotate-180")} />
                         </button>
                         {isModerationOpen && (
-                          <div className="absolute right-0 top-full mt-2 w-48 glass border border-blue-500/20 rounded-lg shadow-xl z-50">
+                          <div className="absolute right-0 top-full mt-2 w-48 glass border border-brand-cyan/20 rounded-lg shadow-xl shadow-brand-cyan/10 z-50">
                             <Link
                               href="/moderation/forum"
-                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-colors first:rounded-t-lg"
+                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:text-brand-cyan hover:bg-brand-cyan/5 transition-colors first:rounded-t-lg"
                             >
                               <MessageSquare className="h-4 w-4" />
                               Forum Moderation
                             </Link>
                             <Link
                               href="/moderation/social"
-                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-colors last:rounded-b-lg"
+                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 hover:text-brand-cyan hover:bg-brand-cyan/5 transition-colors last:rounded-b-lg"
                             >
                               <Users className="h-4 w-4" />
                               Social Moderation
@@ -210,12 +210,12 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                     <div className="relative" ref={userMenuRef}>
                       <button
                         onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                        className="flex items-center gap-2 px-2 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                        className="flex items-center gap-2 px-2 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-brand-cyan hover:bg-white/5 transition-all"
                       >
                         <img
                           src={getUserAvatar(user.minecraftUsername, user.avatar, 32)}
                           alt={user.username || user.name || 'User'}
-                          className="h-7 w-7 rounded-lg pixelated border border-cyan-500/30"
+                          className="h-7 w-7 rounded-lg pixelated border border-brand-cyan/40 shadow-sm shadow-brand-cyan/20"
                         />
                         <span className="hidden lg:inline max-w-[100px] truncate">
                           {user.username || user.name}
@@ -223,17 +223,17 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                         <ChevronDown className={cn("h-3 w-3 transition-transform", isUserMenuOpen && "rotate-180")} />
                       </button>
                       {isUserMenuOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-52 glass border border-blue-500/20 rounded-lg shadow-xl z-50 overflow-hidden">
+                        <div className="absolute right-0 top-full mt-2 w-52 glass border border-brand-cyan/20 rounded-lg shadow-xl shadow-brand-cyan/10 z-50 overflow-hidden">
                           <Link
                             href={`/profile/${user.username || user.id}`}
-                            className="flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-colors border-b border-white/10"
+                            className="flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:text-brand-cyan hover:bg-brand-cyan/5 transition-colors border-b border-white/10"
                           >
                             <UserCircle className="h-4 w-4" />
                             View Profile
                           </Link>
                           <Link
                             href="/settings"
-                            className="flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-colors"
+                            className="flex items-center gap-2 px-4 py-3 text-sm text-gray-300 hover:text-brand-cyan hover:bg-brand-cyan/5 transition-colors"
                           >
                             <Settings className="h-4 w-4" />
                             Settings
@@ -254,14 +254,14 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                     {/* Public user actions */}
                     <Link
                       href="/login"
-                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 rounded-lg transition-all"
+                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-300 hover:text-brand-cyan hover:bg-white/5 rounded-lg transition-all"
                     >
                       <LogIn className="h-4 w-4" />
                       <span className="hidden sm:inline">Login</span>
                     </Link>
                     <Link
                       href="/register"
-                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-white rounded-lg font-medium hover-lift glow-gradient"
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-cyan via-brand-purple to-brand-pink text-white rounded-lg font-medium hover-lift shadow-lg shadow-brand-cyan/30 hover:shadow-brand-cyan/50 transition-all"
                     >
                       <UserPlus className="h-4 w-4" />
                       <span className="hidden sm:inline">Sign Up</span>
@@ -273,7 +273,7 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
               {/* Mobile Menu Button - Always visible on mobile */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 text-gray-400 hover:text-cyan-400 transition-colors rounded-lg hover:bg-white/5"
+                className="md:hidden p-2 text-gray-400 hover:text-brand-cyan transition-colors rounded-lg hover:bg-white/5"
               >
                 {isMobileMenuOpen ? (
                   <X className="h-6 w-6" />
@@ -304,8 +304,8 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                     className={cn(
                       "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200",
                       isActive
-                        ? "text-cyan-400 bg-cyan-400/10 shadow-lg shadow-green-500/20"
-                        : "text-gray-300 hover:text-cyan-400 hover:bg-white/5"
+                        ? "text-brand-cyan bg-brand-cyan/10 shadow-lg shadow-brand-cyan/30 border border-brand-cyan/20"
+                        : "text-gray-300 hover:text-brand-cyan hover:bg-white/5"
                     )}
                   >
                     <Icon className="h-5 w-5" />
@@ -320,15 +320,15 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                   <div className="border-t border-white/10 my-4" />
 
                   {/* User Profile Card */}
-                  <div className="px-4 py-3 glass rounded-lg border border-cyan-500/20 mb-4">
+                  <div className="px-4 py-3 glass rounded-lg border border-brand-cyan/20 shadow-lg shadow-brand-cyan/10 mb-4">
                     <div className="flex items-center gap-3">
                       <img
                         src={getUserAvatar(user.minecraftUsername, user.avatar, 48)}
                         alt={user.username || user.name || 'User'}
-                        className="h-12 w-12 rounded-lg pixelated border-2 border-cyan-500/50"
+                        className="h-12 w-12 rounded-lg pixelated border-2 border-brand-cyan/50 shadow-sm shadow-brand-cyan/20"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-cyan-400 truncate">
+                        <p className="text-sm font-semibold text-brand-cyan truncate">
                           {user.username || user.name}
                         </p>
                         <p className="text-xs text-gray-400 capitalize">
@@ -341,7 +341,7 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                   <Link
                     href={`/profile/${user.username || user.id}`}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-brand-cyan hover:bg-brand-cyan/5 transition-all"
                   >
                     <UserCircle className="h-5 w-5" />
                     My Profile
@@ -350,7 +350,7 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                   <Link
                     href="/settings"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-brand-cyan hover:bg-brand-cyan/5 transition-all"
                   >
                     <Settings className="h-5 w-5" />
                     Settings
@@ -370,7 +370,7 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                       <Link
                         href="/moderation/forum"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-brand-cyan hover:bg-brand-cyan/5 transition-all"
                       >
                         <MessageSquare className="h-5 w-5" />
                         Forum Moderation
@@ -378,7 +378,7 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                       <Link
                         href="/moderation/social"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-brand-cyan hover:bg-brand-cyan/5 transition-all"
                       >
                         <Users className="h-5 w-5" />
                         Social Moderation
@@ -429,7 +429,7 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                   <Link
                     href="/login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-white/5 transition-all"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-gray-300 hover:text-brand-cyan hover:bg-brand-cyan/5 transition-all"
                   >
                     <LogIn className="h-5 w-5" />
                     Login
@@ -437,7 +437,7 @@ export function UnifiedNav({ user }: UnifiedNavProps) {
                   <Link
                     href="/register"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 text-white rounded-lg font-medium hover-lift glow-gradient"
+                    className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-brand-cyan via-brand-purple to-brand-pink text-white rounded-lg font-medium hover-lift shadow-lg shadow-brand-cyan/30"
                   >
                     <UserPlus className="h-5 w-5" />
                     Sign Up

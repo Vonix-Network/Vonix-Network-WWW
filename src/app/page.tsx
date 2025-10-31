@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Gamepad2, MessageSquare, Users, Shield, Sparkles, Zap } from 'lucide-react';
 import { LiveChat } from '@/components/chat/LiveChat';
 import { getServerSession } from '@/lib/auth';
-import { UnifiedNav } from '@/components/nav/unified-nav';
+import { EnhancedNav } from '@/components/nav/enhanced-nav';
 import SpaceBackground from '@/components/SpaceBackground';
 
 // Force dynamic rendering and disable all caching
@@ -19,7 +19,7 @@ export default async function HomePage() {
       <SpaceBackground 
         particles={180}
         speed={0.7}
-        gradient={['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#ef4444']}
+        gradient={['#00D9FF', '#3B82F6', '#8B5CF6', '#EC4899', '#F97316']}
         size={{ min: 1.2, max: 4 }}
         opacity={{ min: 0.12, max: 0.8 }}
         connectionDistance={140}
@@ -30,21 +30,21 @@ export default async function HomePage() {
       />
 
       {/* Header */}
-      <UnifiedNav user={session?.user} />
+      <EnhancedNav user={session?.user} />
 
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 md:py-32 text-center relative">
         {/* Floating Icons */}
         <div className="absolute top-20 left-10 opacity-20 float">
-          <Sparkles className="h-12 w-12 text-green-400" />
+          <Sparkles className="h-12 w-12 text-brand-cyan" />
         </div>
         <div className="absolute top-40 right-10 opacity-20 float" style={{ animationDelay: '1s' }}>
-          <Zap className="h-16 w-16 text-emerald-400" />
+          <Zap className="h-16 w-16 text-brand-cyan" />
         </div>
         
         <div className="fade-in-up">
-          <div className="inline-block mb-4 px-4 py-2 glass rounded-full border border-green-500/20">
-            <span className="text-sm text-green-400 font-medium">🎮 Powered by Modern Technology</span>
+          <div className="inline-block mb-4 px-4 py-2 glass rounded-full border border-brand-cyan/30 shadow-lg shadow-brand-cyan/20">
+            <span className="text-sm text-brand-cyan font-medium">🎮 Powered by Modern Technology</span>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
@@ -53,26 +53,26 @@ export default async function HomePage() {
             <span className="text-white">Vonix Network</span>
           </h1>
           
-          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            A comprehensive Minecraft community platform with <span className="text-blue-400 font-semibold">real-time chat</span>, 
-            <span className="text-purple-400 font-semibold"> forums</span>, 
-            <span className="text-pink-400 font-semibold"> social features</span>, and more.
+          <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+            A comprehensive Minecraft community platform with <span className="text-brand-cyan font-semibold">real-time chat</span>, 
+            <span className="text-brand-purple font-semibold"> forums</span>, 
+            <span className="text-brand-pink font-semibold"> social features</span>, and more.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center scale-in">
             <Link
               href="/register"
-              className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-xl text-lg font-bold overflow-hidden hover-lift glow-gradient"
+              className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-brand-cyan via-brand-blue to-brand-purple text-white px-8 py-4 rounded-xl text-lg font-bold overflow-hidden hover-lift shadow-lg shadow-brand-cyan/40 hover:shadow-brand-cyan/60 transition-all"
             >
               <span className="relative z-10">Join Now</span>
               <ArrowRight className="h-5 w-5 relative z-10 group-hover:translate-x-2 transition-transform" />
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-purple via-brand-pink to-brand-orange opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="absolute inset-0 shimmer" />
             </Link>
             
             <Link
               href="/about"
-              className="inline-flex items-center gap-2 glass border border-blue-500/30 px-8 py-4 rounded-xl text-lg font-medium text-white hover:border-blue-500/50 transition-all hover-lift"
+              className="inline-flex items-center gap-2 glass border border-brand-cyan/30 px-8 py-4 rounded-xl text-lg font-medium text-white hover:border-brand-cyan/60 hover:shadow-lg hover:shadow-brand-cyan/20 transition-all hover-lift"
             >
               Learn More
             </Link>
@@ -133,24 +133,24 @@ export default async function HomePage() {
 
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-20 text-center relative">
-        <div className="relative glass border border-purple-500/20 rounded-3xl p-12 md:p-16 overflow-hidden hover-lift">
+        <div className="relative glass border border-brand-cyan/20 rounded-3xl p-12 md:p-16 overflow-hidden hover-lift shadow-2xl shadow-brand-cyan/10">
           {/* Background Glow */}
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-pink-500/10" />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-cyan/10 via-transparent to-brand-purple/10" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-brand-cyan/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-purple/20 rounded-full blur-3xl" />
           
           <div className="relative z-10">
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">Ready to Join?</h2>
             <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-              Create your account today and become part of our <span className="text-green-400 font-semibold">growing community</span>.
+              Create your account today and become part of our <span className="text-brand-cyan font-semibold">growing community</span>.
             </p>
             <Link
               href="/register"
-              className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-10 py-5 rounded-xl text-lg font-bold overflow-hidden hover-lift glow-green-lg"
+              className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-brand-cyan via-brand-blue to-brand-purple text-white px-10 py-5 rounded-xl text-lg font-bold overflow-hidden hover-lift shadow-xl shadow-brand-cyan/40 hover:shadow-brand-cyan/60 transition-all"
             >
               <span className="relative z-10">Create Account</span>
               <ArrowRight className="h-5 w-5 relative z-10 group-hover:translate-x-2 transition-transform" />
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-purple via-brand-pink to-brand-orange opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="absolute inset-0 shimmer" />
             </Link>
           </div>
@@ -162,13 +162,13 @@ export default async function HomePage() {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <Gamepad2 className="h-6 w-6 text-green-400" />
+              <Gamepad2 className="h-6 w-6 text-brand-cyan" />
               <span className="text-sm text-gray-400">&copy; {new Date().getFullYear()} Vonix Network. All rights reserved.</span>
             </div>
             <div className="flex items-center gap-6">
-              <Link href="/about" className="text-sm text-gray-400 hover:text-green-400 transition-colors">About</Link>
-              <Link href="/terms" className="text-sm text-gray-400 hover:text-green-400 transition-colors">Terms</Link>
-              <Link href="/privacy" className="text-sm text-gray-400 hover:text-green-400 transition-colors">Privacy</Link>
+              <Link href="/about" className="text-sm text-gray-400 hover:text-brand-cyan transition-colors">About</Link>
+              <Link href="/terms" className="text-sm text-gray-400 hover:text-brand-cyan transition-colors">Terms</Link>
+              <Link href="/privacy" className="text-sm text-gray-400 hover:text-brand-cyan transition-colors">Privacy</Link>
             </div>
           </div>
         </div>
@@ -190,17 +190,17 @@ function FeatureCard({
 }) {
   return (
     <div 
-      className="group relative glass border border-blue-500/10 rounded-2xl p-8 hover-lift hover:border-blue-500/30 transition-all"
+      className="group relative glass border border-brand-cyan/10 rounded-2xl p-8 hover-lift hover:border-brand-cyan/30 hover:shadow-lg hover:shadow-brand-cyan/10 transition-all"
       style={{ animationDelay: delay }}
     >
       {/* Glow Effect on Hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/5 group-hover:to-purple-500/5 rounded-2xl transition-all" />
+      <div className="absolute inset-0 bg-gradient-to-br from-brand-cyan/0 to-brand-purple/0 group-hover:from-brand-cyan/5 group-hover:to-brand-purple/5 rounded-2xl transition-all" />
       
       <div className="relative z-10">
-        <div className="mb-4 inline-flex p-3 bg-blue-500/10 rounded-xl text-blue-400 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all">
+        <div className="mb-4 inline-flex p-3 bg-brand-cyan/10 rounded-xl text-brand-cyan group-hover:scale-110 group-hover:bg-brand-cyan/20 group-hover:shadow-lg group-hover:shadow-brand-cyan/30 transition-all">
           {icon}
         </div>
-        <h3 className="text-xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors">{title}</h3>
+        <h3 className="text-xl font-bold mb-2 text-white group-hover:text-brand-cyan transition-colors">{title}</h3>
         <p className="text-gray-400 leading-relaxed">{description}</p>
       </div>
     </div>
