@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, MessageSquare } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import { formatDiscordMessage } from '@/lib/discord-formatter';
 
 interface ChatMessage {
   id: number;
@@ -143,15 +144,17 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
   };
 
   return (
-    <div className="flex flex-col w-full max-w-4xl mx-auto h-[600px] bg-slate-900/50 border border-green-500/20 rounded-lg overflow-hidden">
+    <div className="flex flex-col w-full mx-auto h-[600px] glass border border-brand-cyan/20 rounded-2xl overflow-hidden shadow-2xl shadow-brand-cyan/10 hover:border-brand-cyan/30 transition-all">
       {/* Chat Header */}
-      <div className="px-4 py-3 bg-slate-900/80 border-b border-green-500/20">
+      <div className="px-6 py-4 glass border-b border-brand-cyan/20 bg-gradient-to-r from-brand-cyan/5 to-brand-purple/5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🎮</span>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-brand-cyan/10 rounded-xl text-brand-cyan shadow-lg shadow-brand-cyan/20">
+              <MessageSquare className="h-6 w-6" />
+            </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Live Community Chat</h3>
-              <p className="text-sm text-gray-400">
+              <h3 className="text-xl font-bold text-white gradient-text">Live Community Chat</h3>
+              <p className="text-sm text-gray-400 mt-0.5">
                 {botStatus === null ? 'Checking status...' :
                  !botStatus.configured ? 'Bot not configured' :
                  !botStatus.active ? 'Bot offline' :
@@ -159,18 +162,18 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${
+          <div className="flex items-center gap-3 px-4 py-2 glass rounded-full border border-brand-cyan/20">
+            <div className={`w-2.5 h-2.5 rounded-full ${
               botStatus === null ? 'bg-gray-500' :
               !botStatus.configured ? 'bg-red-500' :
               !botStatus.active ? 'bg-yellow-500' :
-              'bg-green-500 animate-pulse'
+              'bg-brand-cyan animate-pulse shadow-lg shadow-brand-cyan/50'
             }`}></div>
-            <span className={`text-xs ${
+            <span className={`text-sm font-medium ${
               botStatus === null ? 'text-gray-400' :
               !botStatus.configured ? 'text-red-400' :
               !botStatus.active ? 'text-yellow-400' :
-              'text-green-400'
+              'text-brand-cyan'
             }`}>
               {botStatus === null ? 'Checking...' :
                !botStatus.configured ? 'Not Setup' :
@@ -184,7 +187,7 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
       {/* Messages Container */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
+        className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-transparent via-brand-cyan/[0.02] to-brand-purple/[0.02]"
         style={{ maxHeight: 'calc(100% - 120px)' }}
       >
         {loading ? (
@@ -198,25 +201,27 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
           </div>
         ) : (
           messages.map((message) => (
-            <div key={message.id} className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div key={message.id} className="group flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 hover:bg-brand-cyan/5 p-3 rounded-xl transition-all">
               <img
                 src={message.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.authorName)}&background=6366f1&color=fff`}
                 alt={message.authorName}
-                className="w-10 h-10 rounded-full flex-shrink-0"
+                className="w-12 h-12 rounded-xl flex-shrink-0 border-2 border-brand-cyan/20 group-hover:border-brand-cyan/40 transition-all shadow-lg"
                 onError={(e) => {
                   const img = e.target as HTMLImageElement;
                   img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(message.authorName)}&background=6366f1&color=fff`;
                 }}
               />
               <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="font-semibold text-white">{message.authorName}</span>
-                  <span className="text-xs text-gray-500">
+                <div className="flex items-baseline gap-3 mb-1.5">
+                  <span className="font-bold text-white group-hover:text-brand-cyan transition-colors">{message.authorName}</span>
+                  <span className="text-xs text-gray-500 font-medium">
                     {formatTime(message.timestamp)}
                   </span>
                 </div>
                 {message.content && (
-                  <p className="text-gray-300 break-words whitespace-pre-wrap">{message.content}</p>
+                  <div className="text-gray-300 break-words whitespace-pre-wrap leading-relaxed">
+                    {formatDiscordMessage(message.content)}
+                  </div>
                 )}
                 
                 {/* Render Discord Embeds */}
@@ -224,17 +229,17 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
                   try {
                     const embeds = JSON.parse(message.embeds);
                     return embeds.map((embed: any, idx: number) => (
-                      <div key={idx} className="mt-2 bg-slate-800/50 rounded-r-lg p-3 space-y-2 discord-animated-border">
+                      <div key={idx} className="mt-3 glass border-l-4 border-brand-cyan rounded-xl p-4 space-y-2 shadow-lg">
                         {embed.author && (
                           <div className="flex items-center gap-2 text-sm">
                             {embed.author.iconURL && (
-                              <img src={embed.author.iconURL} alt="" className="w-5 h-5 rounded-full" />
+                              <img src={embed.author.iconURL} alt="" className="w-5 h-5 rounded-full border border-brand-cyan/20" />
                             )}
-                            <span className="font-semibold text-gray-200">{embed.author.name}</span>
+                            <span className="font-semibold text-brand-cyan">{embed.author.name}</span>
                           </div>
                         )}
                         {embed.title && (
-                          <div className="font-bold gradient-text">
+                          <div className="font-bold text-lg gradient-text">
                             {embed.url ? (
                               <a href={embed.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
                                 {embed.title}
@@ -245,23 +250,23 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
                           </div>
                         )}
                         {embed.description && (
-                          <p className="text-gray-300 text-sm whitespace-pre-wrap">{embed.description}</p>
+                          <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{embed.description}</p>
                         )}
                         {embed.fields && embed.fields.length > 0 && (
-                          <div className="grid grid-cols-1 gap-2">
+                          <div className="grid grid-cols-1 gap-3">
                             {embed.fields.map((field: any, fidx: number) => (
-                              <div key={fidx}>
-                                <div className="font-semibold text-gray-200 text-sm">{field.name}</div>
-                                <div className="text-gray-400 text-sm">{field.value}</div>
+                              <div key={fidx} className="glass rounded-lg p-3">
+                                <div className="font-semibold text-brand-cyan text-sm mb-1">{field.name}</div>
+                                <div className="text-gray-300 text-sm">{field.value}</div>
                               </div>
                             ))}
                           </div>
                         )}
                         {embed.thumbnail && (
-                          <img src={embed.thumbnail} alt="" className="max-w-[80px] rounded" />
+                          <img src={embed.thumbnail} alt="" className="max-w-[80px] rounded-lg border border-brand-cyan/20" />
                         )}
                         {embed.image && (
-                          <img src={embed.image} alt="" className="max-w-full rounded-lg" />
+                          <img src={embed.image} alt="" className="max-w-full rounded-xl border border-brand-cyan/20 shadow-lg" />
                         )}
                         {embed.footer && (
                           <div className="flex items-center gap-2 text-xs text-gray-500 mt-2">
@@ -283,13 +288,13 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
                   try {
                     const attachments = JSON.parse(message.attachments);
                     return attachments.map((att: any, idx: number) => (
-                      <div key={idx} className="mt-2">
+                      <div key={idx} className="mt-3">
                         {att.contentType?.startsWith('image/') ? (
                           <a href={att.url} target="_blank" rel="noopener noreferrer">
                             <img 
                               src={att.url} 
                               alt={att.filename} 
-                              className="max-w-full max-h-96 rounded-lg border border-green-500/20 hover:border-green-500/50 transition-colors cursor-pointer"
+                              className="max-w-full max-h-96 rounded-xl border border-brand-cyan/20 hover:border-brand-cyan/50 hover:shadow-lg hover:shadow-brand-cyan/20 transition-all cursor-pointer"
                             />
                           </a>
                         ) : (
@@ -297,10 +302,10 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
                             href={att.url} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-slate-800 border border-green-500/20 rounded-lg hover:border-green-500/50 transition-colors text-sm text-gray-300"
+                            className="inline-flex items-center gap-3 px-4 py-3 glass border border-brand-cyan/20 rounded-xl hover:border-brand-cyan/50 hover:shadow-lg hover:shadow-brand-cyan/20 transition-all text-sm text-gray-300"
                           >
                             <span>📎</span>
-                            <span>{att.filename}</span>
+                            <span className="font-medium">{att.filename}</span>
                             <span className="text-xs text-gray-500">({(att.size / 1024).toFixed(1)} KB)</span>
                           </a>
                         )}
@@ -318,9 +323,9 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
       </div>
 
       {/* Chat Input / CTA */}
-      <div className="p-4 bg-slate-900/80 border-t border-blue-500/20">
+      <div className="p-6 glass border-t border-brand-cyan/20 bg-gradient-to-r from-brand-cyan/5 to-brand-purple/5">
         {session && showInput && !readOnly ? (
-          <form onSubmit={handleSendMessage} className="flex gap-2">
+          <form onSubmit={handleSendMessage} className="flex gap-3">
             <input
               type="text"
               value={messageInput}
@@ -330,24 +335,24 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
                 : 'Type a message...'}
               disabled={sending}
               maxLength={2000}
-              className="flex-1 px-4 py-2 bg-slate-800 border border-blue-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
+              className="flex-1 px-5 py-3 glass border border-brand-cyan/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-cyan/50 focus:shadow-lg focus:shadow-brand-cyan/20 disabled:opacity-50 transition-all"
             />
             <button
               type="submit"
               disabled={sending || !messageInput.trim()}
-              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover-lift glow-gradient disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-gradient-to-r from-brand-cyan via-brand-blue to-brand-purple text-white rounded-xl font-bold hover-lift shadow-lg shadow-brand-cyan/40 hover:shadow-brand-cyan/60 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
             >
               {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Send className="h-4 w-4" />
+                <Send className="h-5 w-5" />
               )}
             </button>
           </form>
         ) : (
-          <div className="text-center py-2 px-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <div className="text-center py-4 px-6 glass border border-brand-cyan/20 rounded-xl">
             <p className="text-sm text-gray-300">
-              💬 <a href="/register" className="text-blue-400 hover:text-blue-300 font-semibold">Register</a> or <a href={discordUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 font-semibold">join our Discord</a> to chat with the community
+              💬 <a href="/register" className="text-brand-cyan hover:text-brand-blue font-bold transition-colors">Register</a> or <a href={discordUrl} target="_blank" rel="noopener noreferrer" className="text-brand-cyan hover:text-brand-blue font-bold transition-colors">join our Discord</a> to chat with the community
             </p>
           </div>
         )}

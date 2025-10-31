@@ -81,14 +81,7 @@ export default async function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 py-20 relative">
-        <div className="text-center mb-16 fade-in-up">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">Why Choose</span> Vonix Network?
-          </h2>
-          <p className="text-gray-400 text-lg">Experience the future of Minecraft communities</p>
-        </div>
-        
+      <section className="container mx-auto px-4 py-8 relative">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <FeatureCard
             icon={<MessageSquare className="h-10 w-10" />}
@@ -118,17 +111,8 @@ export default async function HomePage() {
       </section>
 
       {/* Live Chat Section */}
-      <section className="container mx-auto px-4 py-20 relative">
-        <div className="text-center mb-12 fade-in-up">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">Join the Conversation</span>
-          </h2>
-          <p className="text-gray-400 text-lg">Connect with our community in real-time</p>
-        </div>
-        
-        <div className="max-w-4xl mx-auto">
-          <LiveChat readOnly={true} showInput={false} messageLimit={20} disableAutoScroll={true} />
-        </div>
+      <section className="container mx-auto px-4 py-8 relative">
+        <LiveChat readOnly={true} showInput={false} messageLimit={100} disableAutoScroll={true} />
       </section>
 
       {/* CTA Section */}
