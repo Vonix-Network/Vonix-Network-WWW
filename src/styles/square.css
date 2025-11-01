@@ -1,0 +1,49 @@
+:root {
+  --sq-bg: rgba(2, 6, 23, 0.7); /* slate-950/70 */
+  --sq-border: rgba(34, 211, 238, 0.25); /* cyan-400/25 */
+  --sq-focus: rgba(34, 211, 238, 0.4); /* cyan-400/40 */
+  --sq-text: #e5e7eb; /* gray-200 */
+  --sq-muted: #9ca3af; /* gray-400 */
+  --sq-error: #ef4444; /* red-500 */
+}
+
+/* Wrapper that Square attaches its iframe into */
+.sq-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Iframe container inherits rounded corners */
+.sq-card-iframe-container,
+.sq-card-component {
+  border-radius: 0.75rem; /* rounded-xl */
+}
+
+/* Message area */
+.sq-card-message {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.75rem; /* text-xs */
+  color: var(--sq-muted);
+}
+
+/* Error state */
+.sq-card-message-error,
+.sq-card-message-has-error {
+  color: var(--sq-error) !important;
+}
+
+/* Focus ring mimic for container */
+.sq-wrapper:focus-within {
+  box-shadow: 0 0 0 2px var(--sq-focus);
+}
+
+/* Optional: match glass aesthetic */
+.glass {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.02)
+  );
+  backdrop-filter: blur(6px);
+}

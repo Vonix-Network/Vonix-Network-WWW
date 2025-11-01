@@ -135,18 +135,17 @@ export function PostActions({
         >
           <MoreVertical className="h-5 w-5" />
         </button>
-      </div>
 
-      {showMenu && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 z-[9998]" 
-            onClick={() => setShowMenu(false)}
-          />
-          
-          {/* Menu - Fixed positioning */}
-          <div className="fixed top-20 right-8 glass border border-white/20 rounded-lg overflow-hidden z-[9999] min-w-[180px] shadow-2xl">
+        {showMenu && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setShowMenu(false)}
+            />
+            
+            {/* Menu - Absolute positioning relative to button */}
+            <div className="absolute right-0 top-8 z-50 min-w-[180px] rounded-lg border border-white/20 bg-gray-900/95 backdrop-blur-sm shadow-xl">
             {/* Edit Action (Author or Moderator) */}
             {(isAuthor || isModerator) && (
               <button
@@ -205,9 +204,10 @@ export function PostActions({
                 Delete Post
               </button>
             )}
-          </div>
-        </>
-      )}
+            </div>
+          </>
+        )}
+      </div>
     </>
   );
 }

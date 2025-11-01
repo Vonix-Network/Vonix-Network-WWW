@@ -142,32 +142,29 @@ export default async function PostPage({ params }: PostPageProps) {
                 </span>
               )}
             </div>
+            <h1 className="text-3xl font-bold text-white mb-2">{postData.post.title}</h1>
+            <div className="flex items-center gap-4 text-sm text-gray-500">
+              <span className="flex items-center gap-1">
+                <Eye className="h-4 w-4" />
+                {postData.post.views} views
+              </span>
+              <span className="flex items-center gap-1">
+                <MessageSquare className="h-4 w-4" />
+                {repliesWithTimestamps.length} replies
+              </span>
+            </div>
           </div>
-        </div>
-        
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-white mb-2">{postData.post.title}</h1>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
-            <span className="flex items-center gap-1">
-              <Eye className="h-4 w-4" />
-              {postData.post.views} views
-            </span>
-            <span className="flex items-center gap-1">
-              <MessageSquare className="h-4 w-4" />
-              {repliesWithTimestamps.length} replies
-            </span>
-          </div>
-        </div>
           
-        {/* Post Actions */}
-        <PostActions
-          postId={postData.post.id}
-          categorySlug={slug}
-          isAuthor={!!isAuthor}
-          isModerator={!!isModerator}
-          isPinned={postData.post.pinned}
-          isLocked={postData.post.locked}
-        />
+          {/* Post Actions */}
+          <PostActions
+            postId={postData.post.id}
+            categorySlug={slug}
+            isAuthor={!!isAuthor}
+            isModerator={!!isModerator}
+            isPinned={postData.post.pinned}
+            isLocked={postData.post.locked}
+          />
+        </div>
       </div>
 
       {/* Original Post */}

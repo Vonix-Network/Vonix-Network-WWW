@@ -17,6 +17,9 @@ export const users = sqliteTable('users', {
   donationRankId: text('donation_rank_id').references(() => donationRanks.id, { onDelete: 'set null' }),
   rankExpiresAt: integer('rank_expires_at', { mode: 'timestamp' }),
   totalDonated: real('total_donated').default(0),
+  // Square Payments Integration
+  squareCustomerId: text('square_customer_id').unique(), // Square customer ID for subscriptions
+  donorRank: text('donor_rank'), // Auto-assigned donor tier (VIP, VIP+, MVP, etc.)
   // XP and Leveling System
   xp: integer('xp').default(0).notNull(),
   level: integer('level').default(1).notNull(),

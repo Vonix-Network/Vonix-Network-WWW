@@ -5,6 +5,7 @@ import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { ProfileSettings } from '@/components/settings/profile-settings';
 import { AccountSettings } from '@/components/settings/account-settings';
+import { SubscriptionCard } from '@/components/settings/subscription-card';
 import UserBackgroundSelector from '@/components/settings/UserBackgroundSelector';
 import { Settings as SettingsIcon } from 'lucide-react';
 
@@ -33,6 +34,9 @@ async function SettingsContent({ session }: { session: any }) {
 
       {/* Account Settings */}
       <AccountSettings user={user} />
+
+      {/* Subscription Management */}
+      <SubscriptionCard />
 
       {/* Background Preference */}
       <UserBackgroundSelector />

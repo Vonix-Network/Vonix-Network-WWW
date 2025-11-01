@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
             level: user.level,
             donationRankId: user.donationRankId,
             totalDonated: user.totalDonated,
+            squareCustomerId: user.squareCustomerId,
+            donorRank: user.donorRank,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt
           }
@@ -74,6 +76,8 @@ export async function GET(request: NextRequest) {
         level: user.level,
         donationRankId: user.donationRankId,
         totalDonated: user.totalDonated,
+        squareCustomerId: user.squareCustomerId,
+        donorRank: user.donorRank,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       }

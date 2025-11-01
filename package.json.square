@@ -1,0 +1,7 @@
+{
+  "note": "Add this dependency to your package.json",
+  "dependencies": {
+    "square": "^36.0.0"
+  },
+  "installation": "npm install square"
+}

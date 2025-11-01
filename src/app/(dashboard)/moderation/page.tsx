@@ -25,7 +25,8 @@ import {
   AlertTriangle,
   TrendingUp,
   FileText,
-  Activity
+  Activity,
+  MoreVertical
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -249,7 +250,7 @@ export default async function UnifiedModerationPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Link href="/admin/reports" className="block">
+            <Link href="/moderation/reports" className="block">
               <Button 
                 variant="outline" 
                 className="w-full h-auto flex flex-col items-start p-4 hover:border-cyan-500/40 transition-all"
@@ -356,7 +357,7 @@ export default async function UnifiedModerationPage() {
                   {recentReports.map((report) => (
                     <Link
                       key={report.id}
-                      href={`/admin/reports?id=${report.id}`}
+                      href={`/moderation/reports/${report.id}`}
                       className="block p-4 glass border border-cyan-500/20 rounded-lg hover:border-cyan-500/40 transition-all"
                     >
                       <div className="flex items-start justify-between">
@@ -385,7 +386,7 @@ export default async function UnifiedModerationPage() {
                 </div>
               )}
               <div className="mt-4 pt-4 border-t border-white/10">
-                <Link href="/admin/reports">
+                <Link href="/moderation/reports">
                   <Button variant="outline" className="w-full">
                     View All Reports ({totalReports})
                   </Button>
@@ -415,25 +416,35 @@ export default async function UnifiedModerationPage() {
                     className="flex items-start justify-between p-4 glass border border-cyan-500/20 rounded-lg"
                   >
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Link
-                          href={`/forum/${item.category?.slug}/${item.post.id}`}
-                          className="font-semibold text-white hover:text-cyan-400 transition-colors"
-                        >
-                          {item.post.title}
-                        </Link>
-                        {item.post.pinned && (
-                          <Badge variant="outline" className="text-yellow-400 border-yellow-400">
-                            <Pin className="h-3 w-3 mr-1" />
-                            Pinned
-                          </Badge>
-                        )}
-                        {item.post.locked && (
-                          <Badge variant="outline" className="text-gray-400 border-gray-400">
-                            <Lock className="h-3 w-3 mr-1" />
-                            Locked
-                          </Badge>
-                        )}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/forum/${item.category?.slug}/${item.post.id}`}
+                            className="font-semibold text-white hover:text-cyan-400 transition-colors"
+                          >
+                            {item.post.title}
+                          </Link>
+                          {item.post.pinned && (
+                            <Badge variant="outline" className="text-yellow-400 border-yellow-400">
+                              <Pin className="h-3 w-3 mr-1" />
+                              Pinned
+                            </Badge>
+                          )}
+                          {item.post.locked && (
+                            <Badge variant="outline" className="text-gray-400 border-gray-400">
+                              <Lock className="h-3 w-3 mr-1" />
+                              Locked
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="relative">
+                          <button
+                            className="p-1 text-gray-400 hover:text-white transition-colors rounded hover:bg-white/5"
+                            aria-label="Post actions"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-400">
                         <span>by {item.author?.username}</span>

@@ -25,7 +25,7 @@ export default async function DashboardLayout({
       <BackgroundWrapper />
 
       <EnhancedNav user={session.user} />
-      <main className="container mx-auto px-4 py-8">
+      <main className="w-full p-0">
         {children}
       </main>
     </div>

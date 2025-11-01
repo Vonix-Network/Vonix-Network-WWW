@@ -4,6 +4,7 @@ import { desc, eq } from 'drizzle-orm';
 import { Heart, DollarSign, Bitcoin, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { DonationsPageClient } from '@/components/donations/donations-page-client';
+import { SquarePaymentForm } from '@/components/donations/square-payment-form';
 import { Avatar } from '@/components/ui/avatar';
 
 export const revalidate = 300; // Revalidate every 5 minutes
@@ -79,8 +80,16 @@ export default async function DonationsPage() {
           </div>
         </section>
 
-        {/* Donation Methods */}
+        {/* Square Payment Form - Only shows if enabled */}
         <section className="mb-12">
+          <SquarePaymentForm defaultAmount={10} minAmount={1} />
+        </section>
+
+        {/* Alternative Donation Methods */}
+        <section className="mb-12">
+          <h2 className="text-3xl font-bold text-center mb-8 text-white">
+            Alternative Payment Methods
+          </h2>
           <div className="grid md:grid-cols-2 gap-6">
             {/* PayPal */}
             <div className="glass border border-blue-500/20 rounded-2xl p-8 hover-lift">

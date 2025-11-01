@@ -31,9 +31,9 @@ export default async function AdminLayout({
         {/* Admin Header */}
         <AdminHeader user={session.user} />
 
-        {/* Page Content - Scrollable (full width) */}
+        {/* Page Content - Scrollable (full width, no extra padding) */}
         <main className="flex-1 overflow-y-auto">
-          <div className="w-full px-6 py-8">
+          <div className="w-full p-0">
             {children}
           </div>
         </main>
