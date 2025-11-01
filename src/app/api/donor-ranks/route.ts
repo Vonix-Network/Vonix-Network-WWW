@@ -8,18 +8,41 @@ import { donationRanks } from '@/db/schema';
  */
 export async function GET() {
   try {
-    const ranks = await db.select({
+    const rawRanks = await db.select({
       id: donationRanks.id,
       name: donationRanks.name,
+      subtitle: donationRanks.subtitle,
       color: donationRanks.color,
       textColor: donationRanks.textColor,
       icon: donationRanks.icon,
       badge: donationRanks.badge,
       glow: donationRanks.glow,
-      subtitle: donationRanks.subtitle,
+      minAmount: donationRanks.minAmount,
     }).from(donationRanks);
 
-    return NextResponse.json(ranks, {
+    // Transform to match subscribe page expectations
+    const ranks = rawRanks.map(rank => ({
+      id: rank.id,
+      name: rank.name,
+      description: rank.subtitle || `Get the ${rank.name} rank and unlock exclusive perks!`,
+      features: [
+        'Custom name color',
+        'Special badge',
+        'Priority support',
+        `Starting at $${rank.minAmount}/month`
+      ],
+      color: rank.color,
+      textColor: rank.textColor,
+      backgroundColor: rank.color,
+      borderColor: rank.color,
+      icon: rank.icon,
+      badge: rank.badge,
+      glow: rank.glow,
+      minDonation: rank.minAmount,
+      priority: rank.minAmount, // Use minAmount as priority for sorting
+    }));
+
+    return NextResponse.json({ ranks }, {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       }

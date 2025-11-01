@@ -81,7 +81,7 @@ async function AdminContent() {
   const [revenueStats] = await db
     .select({
       totalRevenue: sql<number>`coalesce(sum(${donations.amount}), 0)`,
-      monthlyRevenue: sql<number>`coalesce(sum(case when ${donations.createdAt} >= date('now', 'start of month') then ${donations.amount} else 0 end), 0)`,
+      monthlyRevenue: sql<number>`coalesce(sum(case when ${donations.createdAt} >= unixepoch('now', '-31 days') then ${donations.amount} else 0 end), 0)`,
       totalDonations: sql<number>`count(*)`,
     })
     .from(donations);

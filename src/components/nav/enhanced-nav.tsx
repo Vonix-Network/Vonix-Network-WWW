@@ -7,7 +7,7 @@ import { signOut } from 'next-auth/react';
 import {
   Home, Users, MessageSquare, Mail, Settings, LogOut, Shield, Search, Menu, X,
   Trophy, Server, Award, Heart, User, LogIn, UserPlus, ChevronDown, UserCircle,
-  Gamepad2, Newspaper, Calendar, TrendingUp, BookOpen, Zap, Star, Gift
+  Gamepad2, Newspaper, Calendar, TrendingUp, BookOpen, Zap, Star, Gift, Crown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/notifications/notification-bell';
@@ -80,6 +80,7 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
       label: 'Donations',
       icon: Heart,
       dropdown: [
+        { href: '/donations/subscribe', label: 'Subscribe', icon: Crown },
         { href: '/ranks', label: 'Donor Ranks', icon: Award },
       ]
     },
@@ -112,6 +113,7 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
       label: 'Donations',
       icon: Heart,
       dropdown: [
+        { href: '/donations/subscribe', label: 'Subscribe', icon: Crown },
         { href: '/ranks', label: 'Donor Ranks', icon: Award },
       ]
     },

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,7 @@ interface SquarePaymentFormProps {
 }
 
 export function SquarePaymentForm({ minAmount = 1, defaultAmount = 10 }: SquarePaymentFormProps) {
+  const router = useRouter();
   const [squareEnabled, setSquareEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState(defaultAmount.toString());
@@ -30,6 +32,8 @@ export function SquarePaymentForm({ minAmount = 1, defaultAmount = 10 }: SquareP
   const [payments, setPayments] = useState<any>(null);
   const [processing, setProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [isSubscription, setIsSubscription] = useState(false);
+  const [subscriptionData, setSubscriptionData] = useState<any>(null);
 
   useEffect(() => {
     async function initialize() {
@@ -196,18 +200,56 @@ export function SquarePaymentForm({ minAmount = 1, defaultAmount = 10 }: SquareP
         const data = await response.json();
 
         if (data.success) {
-          setPaymentSuccess(true);
-          toast.success('Thank you for your donation!');
-          
-          // Reset form
-          setAmount(defaultAmount.toString());
-          setMessage('');
-          setMinecraftUsername('');
-          
-          // Reload page after 2 seconds to show updated donations
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000);
+          // Check if this is a subscription purchase
+          if (isSubscription && subscriptionData) {
+            try {
+              console.log('Processing subscription:', subscriptionData);
+              
+              // Process subscription
+              const subResponse = await fetch('/api/subscriptions/purchase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  rankId: subscriptionData.rankId,
+                  days: subscriptionData.days,
+                  amount: subscriptionData.price,
+                  paymentId: data.paymentId || data.orderId,
+                }),
+              });
+
+              const subData = await subResponse.json();
+              
+              if (subData.success) {
+                setPaymentSuccess(true);
+                toast.success(`${subscriptionData.rankName} rank activated for ${subscriptionData.label}!`);
+                sessionStorage.removeItem('subscription_purchase');
+                
+                // Redirect to dashboard
+                setTimeout(() => {
+                  router.push('/dashboard');
+                }, 2000);
+              } else {
+                toast.error(subData.error || 'Failed to activate rank');
+              }
+            } catch (error) {
+              console.error('Subscription processing error:', error);
+              toast.error('Payment succeeded but rank activation failed. Please contact support.');
+            }
+          } else {
+            // Regular donation
+            setPaymentSuccess(true);
+            toast.success('Thank you for your donation!');
+            
+            // Reset form
+            setAmount(defaultAmount.toString());
+            setMessage('');
+            setMinecraftUsername('');
+            
+            // Reload page after 2 seconds to show updated donations
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+          }
         } else {
           toast.error(data.error || 'Payment failed');
         }
@@ -231,9 +273,14 @@ export function SquarePaymentForm({ minAmount = 1, defaultAmount = 10 }: SquareP
       <Card className="border-green-500/30 bg-green-500/5">
         <CardContent className="p-8 text-center">
           <CheckCircle2 className="h-16 w-16 text-green-400 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-white mb-2">Payment Successful!</h3>
+          <h3 className="text-2xl font-bold text-white mb-2">
+            {isSubscription ? 'Rank Activated!' : 'Payment Successful!'}
+          </h3>
           <p className="text-gray-400">
-            Thank you for supporting Vonix Network. Your donation helps keep our servers running!
+            {isSubscription && subscriptionData
+              ? `Your ${subscriptionData.rankName} rank has been activated for ${subscriptionData.label}!`
+              : 'Thank you for supporting Vonix Network. Your donation helps keep our servers running!'
+            }
           </p>
         </CardContent>
       </Card>

@@ -1,8 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Trash2, DollarSign, RefreshCw, Edit2, X, Check, Plus } from 'lucide-react';
+import { 
+  Eye, EyeOff, Trash2, DollarSign, RefreshCw, Edit2, X, Check, Plus,
+  Download, Search, Filter, TrendingUp, Calendar, ArrowUpDown, ChevronLeft, ChevronRight
+} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 interface Donation {
   id: number;
@@ -32,9 +39,93 @@ export default function AdminDonationsPage() {
     displayed: true,
   });
 
+  // Search and Filter
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterMethod, setFilterMethod] = useState<string>('all');
+  const [filterVisibility, setFilterVisibility] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   useEffect(() => {
     fetchDonations();
   }, []);
+
+  // Analytics Calculations
+  const analytics = useMemo(() => {
+    const total = donations.reduce((sum, d) => sum + d.amount, 0);
+    const last30Days = donations.filter(d => {
+      const daysSince = (Date.now() - new Date(d.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+      return daysSince <= 30;
+    });
+    const monthlyTotal = last30Days.reduce((sum, d) => sum + d.amount, 0);
+    const avgDonation = donations.length > 0 ? total / donations.length : 0;
+    const uniqueMethods = new Set(donations.map(d => d.method).filter(Boolean));
+
+    return {
+      totalRevenue: total,
+      monthlyRevenue: monthlyTotal,
+      totalDonations: donations.length,
+      avgDonation,
+      uniqueMethods: uniqueMethods.size,
+      visibleDonations: donations.filter(d => d.displayed).length,
+    };
+  }, [donations]);
+
+  // Filtered and Sorted Donations
+  const filteredDonations = useMemo(() => {
+    let filtered = donations;
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(d =>
+        d.minecraftUsername?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        d.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        d.message?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Method filter
+    if (filterMethod !== 'all') {
+      filtered = filtered.filter(d => d.method === filterMethod);
+    }
+
+    // Visibility filter
+    if (filterVisibility === 'visible') {
+      filtered = filtered.filter(d => d.displayed);
+    } else if (filterVisibility === 'hidden') {
+      filtered = filtered.filter(d => !d.displayed);
+    }
+
+    // Sorting
+    filtered.sort((a, b) => {
+      if (sortBy === 'date') {
+        const aTime = new Date(a.createdAt).getTime();
+        const bTime = new Date(b.createdAt).getTime();
+        return sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
+      } else {
+        return sortOrder === 'desc' ? b.amount - a.amount : a.amount - b.amount;
+      }
+    });
+
+    return filtered;
+  }, [donations, searchTerm, filterMethod, filterVisibility, sortBy, sortOrder]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredDonations.length / itemsPerPage);
+  const paginatedDonations = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredDonations.slice(start, start + itemsPerPage);
+  }, [filteredDonations, currentPage, itemsPerPage]);
+
+  // Get unique payment methods for filter
+  const paymentMethods = useMemo(() => {
+    const methods = new Set(donations.map(d => d.method).filter(Boolean));
+    return Array.from(methods);
+  }, [donations]);
 
   const fetchDonations = async () => {
     try {
@@ -135,6 +226,32 @@ export default function AdminDonationsPage() {
     }
   };
 
+  // Export to CSV
+  const exportToCSV = () => {
+    const headers = ['ID', 'Date', 'Username', 'Minecraft', 'Amount', 'Currency', 'Method', 'Message', 'Visible'];
+    const rows = filteredDonations.map(d => [
+      d.id,
+      new Date(d.createdAt).toLocaleString(),
+      d.username || 'N/A',
+      d.minecraftUsername || 'N/A',
+      d.amount.toFixed(2),
+      d.currency,
+      d.method || 'N/A',
+      d.message ? `"${d.message.replace(/"/g, '""')}"` : 'N/A',
+      d.displayed ? 'Yes' : 'No'
+    ]);
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `donations-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success('Donations exported to CSV');
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -146,37 +263,174 @@ export default function AdminDonationsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="container mx-auto px-4 py-8 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
             <DollarSign className="h-8 w-8 text-green-400" />
             Donation Management
           </h1>
-          <p className="text-gray-400 mt-2">Manage donations and Recent Supporters visibility</p>
+          <p className="text-gray-400 mt-2">Enterprise analytics and management</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
+          <Button onClick={exportToCSV} variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button onClick={() => setShowCreateForm(!showCreateForm)} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
             Add Donation
-          </button>
-          <button
-            onClick={fetchDonations}
-            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button onClick={fetchDonations} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
+      {/* Analytics Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-green-500/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-green-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-400">
+              ${analytics.totalRevenue.toFixed(2)}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">All time</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-cyan-500/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Last 30 Days</CardTitle>
+            <TrendingUp className="h-4 w-4 text-cyan-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-cyan-400">
+              ${analytics.monthlyRevenue.toFixed(2)}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Monthly revenue</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-purple-500/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Donations</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-400">
+              {analytics.totalDonations}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {analytics.visibleDonations} visible
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-orange-500/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Average Donation</CardTitle>
+            <TrendingUp className="h-4 w-4 text-orange-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-400">
+              ${analytics.avgDonation.toFixed(2)}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {analytics.uniqueMethods} payment methods
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and Filter Bar */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="md:col-span-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search donations..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <div>
+              <select
+                value={filterMethod}
+                onChange={(e) => setFilterMethod(e.target.value)}
+                className="w-full h-10 px-3 bg-slate-900 border border-slate-700 rounded-md text-white text-sm"
+              >
+                <option value="all">All Methods</option>
+                {paymentMethods.map(method => (
+                  <option key={method} value={method || 'Unknown'}>{method || 'Unknown'}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <select
+                value={filterVisibility}
+                onChange={(e) => setFilterVisibility(e.target.value)}
+                className="w-full h-10 px-3 bg-slate-900 border border-slate-700 rounded-md text-white text-sm"
+              >
+                <option value="all">All Status</option>
+                <option value="visible">Visible Only</option>
+                <option value="hidden">Hidden Only</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4 mt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Sort by:</span>
+              <Button
+                variant={sortBy === 'date' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSortBy('date')}
+              >
+                <Calendar className="h-3 w-3 mr-1" />
+                Date
+              </Button>
+              <Button
+                variant={sortBy === 'amount' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSortBy('amount')}
+              >
+                <DollarSign className="h-3 w-3 mr-1" />
+                Amount
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+              >
+                <ArrowUpDown className="h-3 w-3 mr-1" />
+                {sortOrder === 'desc' ? 'Desc' : 'Asc'}
+              </Button>
+            </div>
+            <div className="ml-auto text-sm text-gray-400">
+              Showing {paginatedDonations.length} of {filteredDonations.length} donations
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Create Donation Form */}
       {showCreateForm && (
-        <div className="mb-6 glass border border-green-500/20 rounded-2xl p-6">
-          <h2 className="text-xl font-bold text-white mb-4">Add New Donation</h2>
+        <Card className="border-green-500/20">
+          <CardHeader>
+            <CardTitle>Add New Donation</CardTitle>
+            <CardDescription>Create a manual donation entry</CardDescription>
+          </CardHeader>
+          <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-400 mb-1">Minecraft Username *</label>
@@ -247,37 +501,36 @@ export default function AdminDonationsPage() {
             </div>
           </div>
           <div className="flex gap-2 mt-4">
-            <button
-              onClick={createDonation}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-2"
-            >
-              <Check className="h-4 w-4" />
+            <Button onClick={createDonation}>
+              <Check className="h-4 w-4 mr-2" />
               Create Donation
-            </button>
-            <button
-              onClick={() => setShowCreateForm(false)}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded flex items-center gap-2"
-            >
-              <X className="h-4 w-4" />
+            </Button>
+            <Button onClick={() => setShowCreateForm(false)} variant="outline">
+              <X className="h-4 w-4 mr-2" />
               Cancel
-            </button>
+            </Button>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="glass border border-green-500/20 rounded-2xl overflow-hidden">
-        <div className="p-4 border-b border-white/10 bg-slate-900/50">
-          <h2 className="text-xl font-bold text-white">All Donations ({donations.length})</h2>
-        </div>
-
-        {donations.length === 0 ? (
+      {/* Donations Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Donations List</CardTitle>
+          <CardDescription>
+            {filteredDonations.length} donation{filteredDonations.length !== 1 ? 's' : ''} found
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+        {paginatedDonations.length === 0 ? (
           <div className="p-12 text-center text-gray-400">
             <DollarSign className="h-16 w-16 mx-auto mb-4 text-gray-600" />
-            <p>No donations yet</p>
+            <p>No donations found</p>
           </div>
         ) : (
           <div className="divide-y divide-white/10">
-            {donations.map((donation) => (
+            {paginatedDonations.map((donation) => (
               <div
                 key={donation.id}
                 className={`p-4 hover:bg-white/5 transition-colors ${
@@ -385,14 +638,47 @@ export default function AdminDonationsPage() {
             ))}
           </div>
         )}
-      </div>
 
-      <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-        <p className="text-sm text-blue-300">
-          💡 <strong>Tip:</strong> Use the eye icon to toggle visibility on the public donations page. 
-          Hidden donations won't appear in "Recent Supporters" but are still stored in the database.
-        </p>
-      </div>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-700">
+            <div className="text-sm text-gray-400">
+              Page {currentPage} of {totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
+        </CardContent>
+      </Card>
+
+      {/* Tips */}
+      <Card className="border-blue-500/20 bg-blue-500/5">
+        <CardContent className="pt-6">
+          <p className="text-sm text-blue-300">
+            💡 <strong>Tip:</strong> Use search and filters to find specific donations. Export to CSV for external analysis. 
+            Hidden donations won't appear in "Recent Supporters" but are still stored in the database.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

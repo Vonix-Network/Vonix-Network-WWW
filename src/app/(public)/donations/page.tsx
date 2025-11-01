@@ -1,11 +1,11 @@
 import { db } from '@/db';
 import { donations, users, siteSettings } from '@/db/schema';
 import { desc, eq } from 'drizzle-orm';
-import { Heart, DollarSign, Bitcoin, CreditCard } from 'lucide-react';
+import { Heart, DollarSign, Bitcoin, CreditCard, Crown, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { DonationsPageClient } from '@/components/donations/donations-page-client';
-import { SquarePaymentForm } from '@/components/donations/square-payment-form';
 import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 
 export const revalidate = 300; // Revalidate every 5 minutes
 
@@ -80,9 +80,53 @@ export default async function DonationsPage() {
           </div>
         </section>
 
-        {/* Square Payment Form - Only shows if enabled */}
-        <section className="mb-12">
-          <SquarePaymentForm defaultAmount={10} minAmount={1} />
+        {/* Rank Subscription CTA */}
+        <section className="mb-16">
+          <div className="glass border-2 border-cyan-500/30 rounded-2xl p-12 text-center hover-lift">
+            <div className="inline-block mb-6 p-4 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-2xl">
+              <Crown className="h-16 w-16 text-cyan-400" />
+            </div>
+            
+            <h2 className="text-4xl font-bold mb-4 text-white">
+              Get Exclusive Ranks & Perks
+            </h2>
+            
+            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+              Subscribe to get premium ranks with custom colors, badges, and exclusive features. 
+              Choose from flexible duration options with automatic discounts!
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link href="/donations/subscribe">
+                <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600">
+                  <Crown className="h-6 w-6 mr-2" />
+                  View Rank Subscriptions
+                  <Zap className="h-6 w-6 ml-2" />
+                </Button>
+              </Link>
+              
+              <Link href="/ranks">
+                <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+                  View All Ranks
+                </Button>
+              </Link>
+            </div>
+            
+            <div className="mt-8 flex gap-6 justify-center text-sm text-gray-400">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-green-400" />
+                <span>Instant Activation</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Heart className="h-4 w-4 text-pink-400" />
+                <span>Support Development</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-cyan-400" />
+                <span>Flexible Pricing</span>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Alternative Donation Methods */}
