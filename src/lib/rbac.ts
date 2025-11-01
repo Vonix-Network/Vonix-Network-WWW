@@ -3,7 +3,7 @@
  * Centralized permission checking for enterprise-grade security
  */
 
-export type UserRole = 'user' | 'moderator' | 'admin';
+import { UserRole } from '@/types/next-auth';
 
 export interface Permission {
   resource: string;
@@ -12,11 +12,13 @@ export interface Permission {
 
 /**
  * Role hierarchy (higher roles inherit lower role permissions)
+ * superadmin (4) > admin (3) > moderator (2) > user (1)
  */
 const ROLE_HIERARCHY: Record<UserRole, number> = {
   user: 1,
   moderator: 2,
   admin: 3,
+  superadmin: 4, // Highest privilege, can only be assigned via database
 };
 
 /**
@@ -50,11 +52,18 @@ const PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: '*', action: 'update' },
     { resource: '*', action: 'delete' },
     { resource: '*', action: 'moderate' },
-    { resource: 'user', action: 'moderate' },
+    { resource: 'user', action: 'moderate' }, // Can modify users/moderators, but NOT superadmins
     { resource: 'settings', action: 'update' },
     { resource: 'rank', action: 'create' },
     { resource: 'rank', action: 'update' },
     { resource: 'rank', action: 'delete' },
+  ],
+  superadmin: [
+    // Inherits all admin, moderator, and user permissions
+    // Plus additional superadmin-only permissions
+    { resource: '*', action: '*' }, // Full access to everything
+    { resource: 'superadmin', action: '*' }, // Can manage other superadmins
+    { resource: 'system', action: '*' }, // System-level access
   ],
 };
 
@@ -69,8 +78,8 @@ export class RBAC {
   ): boolean {
     if (!userRole) return false;
 
-    // Admin has all permissions
-    if (userRole === 'admin') return true;
+    // Superadmin and admin have all permissions
+    if (userRole === 'superadmin' || userRole === 'admin') return true;
 
     // Get all permissions for this role and inherited roles
     const permissions = this.getAllPermissions(userRole);
@@ -120,17 +129,75 @@ export class RBAC {
   }
 
   /**
+   * Check if user is a superadmin
+   */
+  static isSuperAdmin(userRole: UserRole | undefined): boolean {
+    return userRole === 'superadmin';
+  }
+
+  /**
    * Check if user can access admin panel
    */
   static canAccessAdmin(userRole: UserRole | undefined): boolean {
-    return userRole === 'admin';
+    return userRole === 'admin' || userRole === 'superadmin';
   }
 
   /**
    * Check if user can access moderation tools
    */
   static canAccessModeration(userRole: UserRole | undefined): boolean {
-    return userRole === 'admin' || userRole === 'moderator';
+    return userRole === 'admin' || userRole === 'moderator' || userRole === 'superadmin';
+  }
+
+  /**
+   * Check if a user can modify another user
+   * Superadmins cannot be modified by anyone except other superadmins
+   * Admins cannot be modified by moderators
+   */
+  static canModifyUser(
+    modifierRole: UserRole | undefined,
+    targetRole: UserRole
+  ): boolean {
+    if (!modifierRole) return false;
+
+    // Superadmins can modify anyone
+    if (modifierRole === 'superadmin') return true;
+
+    // Admins cannot modify superadmins
+    if (targetRole === 'superadmin') return false;
+
+    // Admins can modify admins, moderators, and users
+    if (modifierRole === 'admin') {
+      return targetRole === 'admin' || targetRole === 'moderator' || targetRole === 'user';
+    }
+
+    // Moderators cannot modify anyone's role
+    return false;
+  }
+
+  /**
+   * Check if a role can be assigned by the current user
+   * Superadmin role can only be assigned via direct database access
+   */
+  static canAssignRole(
+    assignerRole: UserRole | undefined,
+    roleToAssign: UserRole
+  ): boolean {
+    if (!assignerRole) return false;
+
+    // Superadmin role can NEVER be assigned through the UI
+    if (roleToAssign === 'superadmin') return false;
+
+    // Superadmins can assign any role except superadmin
+    if (assignerRole === 'superadmin') return true;
+
+    // Admins can assign moderator and user roles, but not admin or superadmin
+    if (assignerRole === 'admin') {
+      return roleToAssign === 'moderator' || roleToAssign === 'user';
+    }
+
+    // Moderators cannot assign roles
+    return false;
   }
 
   /**
@@ -180,6 +247,7 @@ export class RBAC {
    */
   static getPermissionsSummary(userRole: UserRole | undefined): {
     role: UserRole | 'guest';
+    isSuperAdmin: boolean;
     canAccessAdmin: boolean;
     canAccessModeration: boolean;
     canCreateEvents: boolean;
@@ -188,6 +256,7 @@ export class RBAC {
   } {
     return {
       role: userRole || 'guest',
+      isSuperAdmin: this.isSuperAdmin(userRole),
       canAccessAdmin: this.canAccessAdmin(userRole),
       canAccessModeration: this.canAccessModeration(userRole),
       canCreateEvents: this.canCreateEvents(userRole),
@@ -247,6 +316,24 @@ export function requireModerator(userRole: UserRole | undefined): {
 
   if (!RBAC.canAccessModeration(userRole)) {
     return { authorized: false, error: 'Moderator access required' };
+  }
+
+  return { authorized: true };
+}
+
+/**
+ * Helper to check if user is superadmin
+ */
+export function requireSuperAdmin(userRole: UserRole | undefined): {
+  authorized: boolean;
+  error?: string;
+} {
+  if (!userRole) {
+    return { authorized: false, error: 'Authentication required' };
+  }
+
+  if (!RBAC.isSuperAdmin(userRole)) {
+    return { authorized: false, error: 'Superadmin access required' };
   }
 
   return { authorized: true };

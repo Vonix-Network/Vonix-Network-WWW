@@ -7,7 +7,7 @@ export const users = sqliteTable('users', {
   username: text('username').notNull().unique(),
   email: text('email'),
   password: text('password').notNull(),
-  role: text('role', { enum: ['user', 'admin', 'moderator'] }).default('user').notNull(),
+  role: text('role', { enum: ['user', 'moderator', 'admin', 'superadmin'] }).default('user').notNull(),
   minecraftUsername: text('minecraft_username').unique(),
   minecraftUuid: text('minecraft_uuid').unique(),
   avatar: text('avatar'),

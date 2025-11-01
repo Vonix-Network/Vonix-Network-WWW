@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { users, donationRanks } from '@/db/schema';
 import { minecraftLoginSchema } from '@/lib/validation';
 import { eq } from 'drizzle-orm';
 import { SignJWT } from 'jose';
@@ -59,6 +59,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Fetch donation rank details if user has one
+    let donationRank = null;
+    if (user.donationRankId) {
+      const [rank] = await db
+        .select()
+        .from(donationRanks)
+        .where(eq(donationRanks.id, user.donationRankId))
+        .limit(1);
+      
+      donationRank = rank || null;
+    }
+
+    // Check if rank is expired
+    const now = Date.now();
+    const hasValidRank = user.donationRankId && 
+                        user.rankExpiresAt && 
+                        user.rankExpiresAt.getTime() > now &&
+                        donationRank !== null;
+
     // Update Minecraft username if it changed
     if (user.minecraftUsername !== minecraft_username) {
       await db.update(users)
@@ -92,13 +111,51 @@ export async function POST(req: NextRequest) {
         role: user.role,
         total_donated: user.totalDonated || 0,
         donation_rank_id: user.donationRankId,
+        donation_rank: hasValidRank && donationRank ? {
+          id: donationRank.id,
+          name: donationRank.name,
+          color: donationRank.color,
+          expires_at: user.rankExpiresAt?.toISOString(),
+        } : null,
       },
     });
   } catch (error) {
     console.error('Minecraft login error:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Login failed';
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      // Log full error for admin debugging
+      console.error('Full error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+      
+      // Check for specific errors
+      if (error.message.includes('connection') || error.message.includes('ECONNREFUSED')) {
+        errorMessage = 'Database connection failed';
+        statusCode = 503;
+      } else if (error.message.includes('not found') || error.message.includes('No user')) {
+        errorMessage = 'Account not found';
+        statusCode = 404;
+      } else if (error.message.includes('bcrypt') || error.message.includes('password')) {
+        errorMessage = 'Invalid password';
+        statusCode = 401;
+      } else if (error.message.includes('JWT') || error.message.includes('token')) {
+        errorMessage = 'Failed to generate session token';
+        statusCode = 500;
+      } else {
+        // For other errors, include part of the error message for debugging
+        errorMessage = `Server error: ${error.message.substring(0, 100)}`;
+      }
+    }
+    
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: errorMessage },
+      { status: statusCode }
     );
   }
 }

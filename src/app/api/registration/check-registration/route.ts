@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { users, donationRanks } from '@/db/schema';
 import { checkRegistrationSchema } from '@/lib/validation';
 import { eq } from 'drizzle-orm';
 import { verifyApiKey } from '@/lib/verify-api-key';
@@ -48,6 +48,25 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Fetch donation rank details if user has one
+    let donationRank = null;
+    if (user.donationRankId) {
+      const [rank] = await db
+        .select()
+        .from(donationRanks)
+        .where(eq(donationRanks.id, user.donationRankId))
+        .limit(1);
+      
+      donationRank = rank || null;
+    }
+
+    // Check if rank is expired
+    const now = Date.now();
+    const hasValidRank = user.donationRankId && 
+                        user.rankExpiresAt && 
+                        user.rankExpiresAt.getTime() > now &&
+                        donationRank !== null;
+
     // Return user info if registered
     return NextResponse.json({
       registered: true,
@@ -60,6 +79,12 @@ export async function POST(req: NextRequest) {
         role: user.role,
         total_donated: user.totalDonated || 0,
         donation_rank_id: user.donationRankId,
+        donation_rank: hasValidRank && donationRank ? {
+          id: donationRank.id,
+          name: donationRank.name,
+          color: donationRank.color,
+          expires_at: user.rankExpiresAt?.toISOString(),
+        } : null,
       },
     });
   } catch (error) {

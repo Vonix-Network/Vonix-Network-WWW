@@ -18,7 +18,10 @@ export const registerSchema = z.object({
 
 export const minecraftRegisterSchema = z.object({
   code: z.string().length(6, 'Code must be 6 characters'),
-  password: z.string().min(6, 'Password must be at least 6 characters').regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/, 'Password must contain both letters and numbers'),
+  password: z.string()
+    .min(6, 'Password must be at least 6 characters')
+    .max(128, 'Password is too long')
+    .regex(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':",./<>?]+$/, 'Password contains invalid characters. Allowed: letters, numbers, and !@#$%^&*()_+-=[]{};\':\",./<>?'),
 });
 
 // Minecraft integration schemas

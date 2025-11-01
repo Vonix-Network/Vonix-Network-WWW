@@ -109,9 +109,38 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Generate code error:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to generate code';
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      // Log full error for admin debugging
+      console.error('Full error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+      
+      // Check for specific errors
+      if (error.message.includes('UNIQUE constraint') || error.message.includes('duplicate')) {
+        errorMessage = 'Player already has a registration code';
+        statusCode = 409;
+      } else if (error.message.includes('connection') || error.message.includes('ECONNREFUSED')) {
+        errorMessage = 'Database connection failed';
+        statusCode = 503;
+      } else if (error.message.includes('foreign key') || error.message.includes('violates')) {
+        errorMessage = 'Invalid player data';
+        statusCode = 400;
+      } else {
+        // For other errors, include part of the error message for debugging
+        errorMessage = `Server error: ${error.message.substring(0, 100)}`;
+      }
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: statusCode }
     );
   }
 }

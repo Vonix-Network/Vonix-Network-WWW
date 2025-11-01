@@ -26,7 +26,8 @@ import {
   BarChart3,
   MessageSquare,
   FileText,
-  Key
+  Key,
+  Star
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -37,7 +38,7 @@ interface User {
   email: string | null;
   minecraftUsername: string | null;
   avatar: string | null;
-  role: 'user' | 'moderator' | 'admin';
+  role: 'user' | 'moderator' | 'admin' | 'superadmin';
   level: number;
   xp: number;
   createdAt: Date;
@@ -53,7 +54,7 @@ interface EditUserData {
   username?: string;
   email?: string;
   minecraftUsername?: string;
-  role?: 'user' | 'moderator' | 'admin';
+  role?: 'user' | 'moderator' | 'admin' | 'superadmin';
 }
 
 export default function EnterpriseUserManagement() {
@@ -239,6 +240,7 @@ export default function EnterpriseUserManagement() {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
+      case 'superadmin': return 'bg-gradient-to-r from-yellow-500/30 to-orange-500/30 text-yellow-300 border-yellow-500/50 font-bold';
       case 'admin': return 'bg-red-500/20 text-red-400 border-red-500/30';
       case 'moderator': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
       default: return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30';
@@ -247,6 +249,7 @@ export default function EnterpriseUserManagement() {
 
   const getRoleIcon = (role: string) => {
     switch (role) {
+      case 'superadmin': return <Star className="h-3 w-3 fill-yellow-400" />;
       case 'admin': return <Shield className="h-3 w-3" />;
       case 'moderator': return <Crown className="h-3 w-3" />;
       default: return null;
@@ -632,6 +635,14 @@ export default function EnterpriseUserManagement() {
               <CardDescription>
                 Update user information and permissions
               </CardDescription>
+              {editingUser.role === 'superadmin' && (session?.user?.role as any) !== 'superadmin' && (
+                <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-yellow-300">
+                    <strong>Protected User:</strong> This superadmin user cannot be modified. Only superadmins can edit other superadmin accounts.
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -673,12 +684,21 @@ export default function EnterpriseUserManagement() {
                   <select
                     value={editForm.role || 'user'}
                     onChange={(e) => setEditForm({ ...editForm, role: e.target.value as any })}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    disabled={editingUser.role === 'superadmin' && (session?.user?.role as any) !== 'superadmin'}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="user">User</option>
                     <option value="moderator">Moderator</option>
                     <option value="admin">Admin</option>
+                    {editingUser.role === 'superadmin' && (
+                      <option value="superadmin">Superadmin (Database Only)</option>
+                    )}
                   </select>
+                  {editingUser.role !== 'superadmin' && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Note: Superadmin role can only be assigned via direct database access
+                    </p>
+                  )}
                 </div>
               </div>
 

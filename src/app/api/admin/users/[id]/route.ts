@@ -47,6 +47,25 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 });
     }
 
+    // Get target user to check their role
+    const [targetUser] = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!targetUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Prevent non-superadmins from modifying superadmins
+    if (targetUser.role === 'superadmin' && session.user.role !== 'superadmin') {
+      return NextResponse.json(
+        { error: 'Only superadmins can modify superadmin users' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { username, email, password, role, minecraftUsername, bio, avatar } = body;
 
@@ -72,9 +91,27 @@ export async function PATCH(
     }
 
     if (role !== undefined) {
-      if (!['user', 'moderator', 'admin'].includes(role)) {
+      // Validate role
+      if (!['user', 'moderator', 'admin', 'superadmin'].includes(role)) {
         return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
       }
+
+      // Superadmin role can NEVER be assigned through the UI
+      if (role === 'superadmin') {
+        return NextResponse.json(
+          { error: 'Superadmin role can only be assigned via direct database access' },
+          { status: 403 }
+        );
+      }
+
+      // Non-superadmins cannot assign admin role
+      if (role === 'admin' && session.user.role !== 'superadmin') {
+        return NextResponse.json(
+          { error: 'Only superadmins can assign admin role' },
+          { status: 403 }
+        );
+      }
+
       updateData.role = role;
     }
 
@@ -156,6 +193,25 @@ export async function DELETE(
     // Prevent self-deletion
     if (parseInt(session.user.id) === userId) {
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
+    }
+
+    // Get target user to check their role
+    const [targetUser] = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!targetUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Prevent non-superadmins from deleting superadmins
+    if (targetUser.role === 'superadmin' && session.user.role !== 'superadmin') {
+      return NextResponse.json(
+        { error: 'Only superadmins can delete superadmin users' },
+        { status: 403 }
+      );
     }
 
     // Delete the user (cascade will handle related records)
