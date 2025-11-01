@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CalendarPlus, Loader2, ArrowLeft } from "lucide-react";
 
-export default function CreateEventPage() {
+export default function CreateEventForm() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

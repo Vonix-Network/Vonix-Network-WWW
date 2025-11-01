@@ -5,12 +5,16 @@ import { db } from '@/db';
 import { events, users, eventAttendees } from '@/db/schema';
 import { desc, gte, sql } from 'drizzle-orm';
 import { formatDate } from '@/lib/utils';
+import { getServerSession } from '@/lib/auth';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function EventsContent() {
+  const session = await getServerSession();
+  const role = (session?.user as any)?.role;
+  const canCreate = role === 'admin' || role === 'moderator';
   // Get upcoming events
   const now = new Date();
   const upcomingEvents = await db
@@ -58,13 +62,15 @@ async function EventsContent() {
             Join community events, tournaments, and special activities. Never miss out on the fun!
           </p>
 
-          <Link
-            href="/dashboard/events/create"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover-lift glow-gradient"
-          >
-            <Plus className="h-5 w-5" />
-            Create Event
-          </Link>
+          {canCreate && (
+            <Link
+              href="/events/create"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover-lift glow-gradient"
+            >
+              <Plus className="h-5 w-5" />
+              Create Event
+            </Link>
+          )}
         </div>
       </section>
 

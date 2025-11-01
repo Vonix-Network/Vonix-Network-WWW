@@ -66,6 +66,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Only admins and moderators can create events
+    const role = (session.user as any).role;
+    if (role !== 'admin' && role !== 'moderator') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await request.json();
     
     const schema = z.object({
