@@ -21,7 +21,7 @@ const client = new Client({
   ],
 });
 
-client.on('ready', async () => {
+client.on('clientReady', async () => {
   console.log(`Discord bot logged in as ${client.user?.tag}`);
 });
 
