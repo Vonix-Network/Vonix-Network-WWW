@@ -13,12 +13,6 @@ const nextConfig = {
     ignoreBuildErrors: false, // Keep type checking enabled
   },
 
-  // ESLint configuration
-  eslint: {
-    // Allow production builds to succeed even if there are ESLint errors.
-    // We keep TypeScript type checking enabled via the typescript block above.
-    ignoreDuringBuilds: true,
-  },
 
   experimental: {
     serverActions: {
