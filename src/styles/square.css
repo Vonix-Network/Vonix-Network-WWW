@@ -10,13 +10,25 @@
 /* Wrapper that Square attaches its iframe into */
 .sq-wrapper {
   position: relative;
-  overflow: hidden;
+  transition: all 0.2s ease-in-out;
 }
 
-/* Iframe container inherits rounded corners */
-.sq-card-iframe-container,
+/* Remove default spacing from Square's wrapper */
+.sq-card-wrapper {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Iframe container with no extra spacing */
+.sq-card-iframe-container {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .sq-card-component {
-  border-radius: 0.75rem; /* rounded-xl */
+  display: block;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* Message area */
@@ -33,9 +45,10 @@
   color: var(--sq-error) !important;
 }
 
-/* Focus ring mimic for container */
+/* Enhanced focus state with smooth transition */
 .sq-wrapper:focus-within {
   box-shadow: 0 0 0 2px var(--sq-focus);
+  transform: translateY(-1px);
 }
 
 /* Optional: match glass aesthetic */

@@ -50,8 +50,8 @@ export function SquarePaymentForm({ minAmount = 1, defaultAmount = 10 }: SquareP
         if (!window.Square) {
           const script = document.createElement('script');
           script.src = status.environment === 'production'
-            ? 'https://web.squarecdn.com/1.79.0/square.js'
-            : 'https://sandbox.web.squarecdn.com/1.79.0/square.js';
+            ? 'https://web.squarecdn.com/v1/square.js'
+            : 'https://sandbox.web.squarecdn.com/v1/square.js';
           
           script.onload = () => initializeSquare(status);
           script.onerror = () => {
@@ -78,7 +78,45 @@ export function SquarePaymentForm({ minAmount = 1, defaultAmount = 10 }: SquareP
           status.locationId
         );
 
-        const cardInstance = await paymentsInstance.card();
+        // Dark mode styling to match Vonix design (supported in v1 SDK)
+        const cardInstance = await paymentsInstance.card({
+          style: {
+            input: {
+              backgroundColor: '#0f172a', // slate-900 dark background
+              color: '#e5e7eb', // gray-200 light text
+              fontSize: '16px',
+              fontWeight: '400',
+            },
+            'input::placeholder': {
+              color: '#6b7280', // gray-500 placeholder
+            },
+            'input.is-error': {
+              color: '#ef4444', // red-500
+            },
+            '.input-container': {
+              borderColor: '#334155', // slate-700
+              borderRadius: '8px',
+            },
+            '.input-container.is-focus': {
+              borderColor: '#22d3ee', // cyan-400 accent
+            },
+            '.input-container.is-error': {
+              borderColor: '#ef4444', // red-500
+            },
+            '.message-text': {
+              color: '#9ca3af', // gray-400
+            },
+            '.message-icon': {
+              color: '#9ca3af',
+            },
+            '.message-text.is-error': {
+              color: '#ef4444',
+            },
+            '.message-icon.is-error': {
+              color: '#ef4444',
+            },
+          }
+        });
 
         // Retry attach until container is available
         let attempts = 0;
@@ -207,7 +245,7 @@ export function SquarePaymentForm({ minAmount = 1, defaultAmount = 10 }: SquareP
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CreditCard className="h-5 w-5 text-cyan-400" />
-          Credit Card Payment
+          Credit Card Payment (Beta)
         </CardTitle>
         <CardDescription>
           Secure payment processing powered by Square
@@ -292,10 +330,32 @@ export function SquarePaymentForm({ minAmount = 1, defaultAmount = 10 }: SquareP
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Card Details
           </label>
-          <div 
-            id="card-container" 
-            className="sq-wrapper glass bg-slate-900/60 border border-cyan-500/20 rounded-xl p-0 focus-within:ring-2 focus-within:ring-cyan-500/40"
-          />
+          <div className="glass bg-slate-900/60 border border-cyan-500/30 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-cyan-500/50 focus-within:border-cyan-500/60 transition-all duration-200">
+            <div id="card-container" className="sq-wrapper px-3 pt-3 pb-2" />
+            {/* Card Brand Icons and Security Badge */}
+            <div className="flex items-center justify-between px-3 pb-2.5 border-t border-slate-700/30">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span>Secure encryption</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Accepted:</span>
+                <div className="flex gap-1.5">
+                  <div className="w-8 h-5 bg-slate-800/60 border border-slate-700/50 rounded flex items-center justify-center text-[9px] font-bold text-blue-400">VISA</div>
+                  <div className="w-8 h-5 bg-slate-800/60 border border-slate-700/50 rounded flex items-center justify-center">
+                    <div className="flex gap-px">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+                    </div>
+                  </div>
+                  <div className="w-8 h-5 bg-slate-800/60 border border-slate-700/50 rounded flex items-center justify-center text-[9px] font-bold text-blue-300">AMEX</div>
+                  <div className="w-8 h-5 bg-slate-800/60 border border-slate-700/50 rounded flex items-center justify-center text-[9px] font-bold text-orange-400">DISC</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Submit Button */}
