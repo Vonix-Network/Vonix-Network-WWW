@@ -47,7 +47,7 @@ export async function createSubscription(params: CreateSubscriptionParams): Prom
     };
   }
 
-  const subscriptionsApi = getSubscriptionsApi();
+  const subscriptionsApi = await getSubscriptionsApi();
   if (!subscriptionsApi) {
     return {
       success: false,
@@ -57,7 +57,7 @@ export async function createSubscription(params: CreateSubscriptionParams): Prom
   }
 
   try {
-    const { result } = await subscriptionsApi.createSubscription({
+    const result = await subscriptionsApi.create({
       idempotencyKey: randomUUID(),
       locationId: process.env.SQUARE_LOCATION_ID!,
       planId: params.planId,
@@ -94,11 +94,11 @@ export async function getUserSubscriptions(customerId: string): Promise<UserSubs
     return [];
   }
 
-  const subscriptionsApi = getSubscriptionsApi();
+  const subscriptionsApi = await getSubscriptionsApi();
   if (!subscriptionsApi) return [];
 
   try {
-    const { result } = await subscriptionsApi.searchSubscriptions({
+    const result = await subscriptionsApi.search({
       query: {
         filter: {
           customerIds: [customerId],
@@ -109,7 +109,7 @@ export async function getUserSubscriptions(customerId: string): Promise<UserSubs
 
     if (!result.subscriptions) return [];
 
-    return result.subscriptions.map(sub => ({
+    return result.subscriptions.map((sub: any) => ({
       id: sub.id!,
       status: sub.status!,
       planName: sub.planVariationId || 'Monthly Donation',
@@ -134,11 +134,11 @@ export async function getSubscription(subscriptionId: string) {
     return null;
   }
 
-  const subscriptionsApi = getSubscriptionsApi();
+  const subscriptionsApi = await getSubscriptionsApi();
   if (!subscriptionsApi) return null;
 
   try {
-    const { result } = await subscriptionsApi.retrieveSubscription(subscriptionId);
+    const result = await subscriptionsApi.retrieve({ subscriptionId });
     return result.subscription;
   } catch (error) {
     console.error('Error retrieving subscription:', error);
@@ -159,7 +159,7 @@ export async function cancelSubscription(subscriptionId: string): Promise<Subscr
     };
   }
 
-  const subscriptionsApi = getSubscriptionsApi();
+  const subscriptionsApi = await getSubscriptionsApi();
   if (!subscriptionsApi) {
     return {
       success: false,
@@ -169,7 +169,7 @@ export async function cancelSubscription(subscriptionId: string): Promise<Subscr
   }
 
   try {
-    const { result } = await subscriptionsApi.cancelSubscription(subscriptionId);
+    const result = await subscriptionsApi.cancel({ subscriptionId });
     
     if (result.subscription) {
       return {
@@ -207,7 +207,7 @@ export async function updateSubscription(
     };
   }
 
-  const subscriptionsApi = getSubscriptionsApi();
+  const subscriptionsApi = await getSubscriptionsApi();
   if (!subscriptionsApi) {
     return {
       success: false,
@@ -228,10 +228,10 @@ export async function updateSubscription(
       };
     }
 
-    const { result } = await subscriptionsApi.updateSubscription(
+    const result = await subscriptionsApi.update({
       subscriptionId,
-      updateBody
-    );
+      ...updateBody
+    });
 
     if (result.subscription) {
       return {
@@ -266,7 +266,7 @@ export async function pauseSubscription(subscriptionId: string): Promise<Subscri
     };
   }
 
-  const subscriptionsApi = getSubscriptionsApi();
+  const subscriptionsApi = await getSubscriptionsApi();
   if (!subscriptionsApi) {
     return {
       success: false,
@@ -276,7 +276,7 @@ export async function pauseSubscription(subscriptionId: string): Promise<Subscri
   }
 
   try {
-    const { result } = await subscriptionsApi.pauseSubscription(subscriptionId, {});
+    const result = await subscriptionsApi.pause({ subscriptionId });
     
     if (result.subscription) {
       return {
@@ -311,7 +311,7 @@ export async function resumeSubscription(subscriptionId: string): Promise<Subscr
     };
   }
 
-  const subscriptionsApi = getSubscriptionsApi();
+  const subscriptionsApi = await getSubscriptionsApi();
   if (!subscriptionsApi) {
     return {
       success: false,
@@ -321,7 +321,7 @@ export async function resumeSubscription(subscriptionId: string): Promise<Subscr
   }
 
   try {
-    const { result } = await subscriptionsApi.resumeSubscription(subscriptionId, {});
+    const result = await subscriptionsApi.resume({ subscriptionId });
     
     if (result.subscription) {
       return {

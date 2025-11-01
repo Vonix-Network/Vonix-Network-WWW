@@ -15,11 +15,14 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const statusParam = searchParams.get('status');
+    const status = (statusParam === 'pending' || statusParam === 'reviewed' || statusParam === 'dismissed' || statusParam === 'actioned') 
+      ? statusParam 
+      : null;
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    let query = db
+    const baseQuery = db
       .select({
         report: reportedContent,
         reporter: {
@@ -32,11 +35,10 @@ export async function GET(request: NextRequest) {
       .from(reportedContent)
       .innerJoin(users, eq(reportedContent.reporterId, users.id));
 
-    if (status && status !== 'all') {
-      query = query.where(eq(reportedContent.status, status));
-    }
-
-    const reports = await query
+    const reports = await (status
+      ? baseQuery.where(eq(reportedContent.status, status))
+      : baseQuery
+    )
       .orderBy(desc(reportedContent.createdAt))
       .limit(limit)
       .offset(offset);
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest) {
     const [totalResult] = await db
       .select({ count: count() })
       .from(reportedContent)
-      .where(status && status !== 'all' ? eq(reportedContent.status, status) : undefined);
+      .where(status ? eq(reportedContent.status, status) : sql`1=1`);
 
     return NextResponse.json({
       reports,
@@ -90,7 +92,7 @@ export async function PATCH(request: NextRequest) {
       .set({
         status,
         reviewNotes: notes,
-        reviewedBy: session.user.id,
+        reviewedBy: parseInt(session.user.id),
         reviewedAt: new Date(),
       })
       .where(eq(reportedContent.id, reportId))

@@ -16,7 +16,7 @@ const categorySchema = z.object({
 // PATCH /api/moderation/categories/[id] - Update category
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -26,7 +26,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const categoryId = parseInt(params.id);
+    const { id } = await params;
+    const categoryId = parseInt(id);
     if (isNaN(categoryId)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
@@ -70,7 +71,7 @@ export async function PATCH(
 // DELETE /api/moderation/categories/[id] - Delete category
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -80,7 +81,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const categoryId = parseInt(params.id);
+    const { id } = await params;
+    const categoryId = parseInt(id);
     if (isNaN(categoryId)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }

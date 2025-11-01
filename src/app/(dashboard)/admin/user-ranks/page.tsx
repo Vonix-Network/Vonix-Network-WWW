@@ -461,6 +461,8 @@ export default function UserRanksPage() {
             avatar: null,
             bio: null,
             preferredBackground: null,
+            squareCustomerId: null,
+            donorRank: null,
             donationRankId: editingUser.donationRankId,
             rankExpiresAt: editingUser.rankExpiresAt ? new Date(editingUser.rankExpiresAt) : null,
             totalDonated: editingUser.totalDonated,
