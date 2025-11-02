@@ -61,10 +61,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if rank is expired
+    // Note: If rankExpiresAt is NULL, treat as permanent (never expires)
     const now = Date.now();
+    const isExpired = user.rankExpiresAt && user.rankExpiresAt.getTime() <= now;
     const hasValidRank = user.donationRankId && 
-                        user.rankExpiresAt && 
-                        user.rankExpiresAt.getTime() > now &&
+                        !isExpired &&
                         donationRank !== null;
 
     // Return user info if registered
