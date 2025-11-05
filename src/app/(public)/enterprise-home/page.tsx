@@ -13,16 +13,12 @@ import {
   Sparkles, 
   Zap,
   Shield,
+  Globe,
   ArrowRight,
   Check,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/enterprise-card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/enterprise-card';
 import { Button } from '@/components/ui/enterprise-button';
-import { LiveServerStatus, LiveServerStatusSkeleton } from '@/components/home/live-server-status';
-import { db } from '@/db';
-import { servers } from '@/db/schema';
-import { asc } from 'drizzle-orm';
-import { Suspense } from 'react';
 
 const features = [
   {
@@ -79,13 +75,7 @@ const perks = [
   'Real-time Chat Bridge',
 ];
 
-export default async function HomePage() {
-  // Fetch all servers ordered by orderIndex
-  const allServers = await db
-    .select()
-    .from(servers)
-    .orderBy(asc(servers.orderIndex));
-
+export default function EnterpriseHomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -227,15 +217,44 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Right Side - Live Server Status */}
+            {/* Right Side - Visual Card */}
             <div className="animate-slide-in-right">
-              <Suspense fallback={<LiveServerStatusSkeleton />}>
-                <LiveServerStatus 
-                  initialServers={allServers}
-                  autoRefresh={true}
-                  refreshInterval={60000}
-                />
-              </Suspense>
+              <Card variant="gradient" glow className="overflow-hidden">
+                <CardContent className="p-8 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Server Status</p>
+                      <p className="text-2xl font-bold">Online</p>
+                    </div>
+                    <div className="h-3 w-3 rounded-full bg-success animate-pulse" />
+                  </div>
+                  
+                  <div className="space-y-4 pt-4">
+                    <div className="flex justify-between items-center p-4 rounded-lg bg-white/5">
+                      <span className="text-sm">Players Online</span>
+                      <span className="text-xl font-bold gradient-text">1,234</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center p-4 rounded-lg bg-white/5">
+                      <span className="text-sm">Active Events</span>
+                      <span className="text-xl font-bold gradient-text">12</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center p-4 rounded-lg bg-white/5">
+                      <span className="text-sm">Server Version</span>
+                      <span className="text-xl font-bold gradient-text">1.20.4</span>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 space-y-2">
+                    <p className="text-sm text-muted-foreground">Server IP</p>
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-white/5 border border-white/10">
+                      <Globe className="h-4 w-4 text-brand-cyan" />
+                      <code className="text-brand-cyan font-mono">play.vonix.network</code>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

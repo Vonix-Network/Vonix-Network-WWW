@@ -41,8 +41,17 @@ export default function SubscribePage() {
       const response = await fetch('/api/square/status');
       const data = await response.json();
       setSquareEnabled(data.enabled);
+      
+      // Redirect to donations page if Square is not enabled
+      if (!data.enabled) {
+        toast.error('Rank subscriptions are not available at this time');
+        router.push('/donations');
+      }
     } catch (error) {
       console.error('Failed to check Square status:', error);
+      // Redirect on error as well (assume Square is not configured)
+      toast.error('Unable to load subscription system');
+      router.push('/donations');
     }
   }
 

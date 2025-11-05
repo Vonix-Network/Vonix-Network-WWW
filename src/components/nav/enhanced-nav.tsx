@@ -47,11 +47,20 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [squareEnabled, setSquareEnabled] = useState(false);
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const isModerator = user?.role === 'admin' || user?.role === 'moderator' || user?.role === 'superadmin';
+
+  // Check Square status on mount
+  useEffect(() => {
+    fetch('/api/square/status')
+      .then(res => res.json())
+      .then(data => setSquareEnabled(data.enabled))
+      .catch(() => setSquareEnabled(false));
+  }, []);
 
   // Public navigation structure
   const publicNavItems: NavItem[] = [
@@ -80,7 +89,8 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
       label: 'Donations',
       icon: Heart,
       dropdown: [
-        { href: '/donations/subscribe', label: 'Subscribe', icon: Crown },
+        // Only show Subscribe if Square is enabled
+        ...(squareEnabled ? [{ href: '/donations/subscribe', label: 'Subscribe', icon: Crown }] : []),
         { href: '/ranks', label: 'Donor Ranks', icon: Award },
       ]
     },
@@ -113,7 +123,8 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
       label: 'Donations',
       icon: Heart,
       dropdown: [
-        { href: '/donations/subscribe', label: 'Subscribe', icon: Crown },
+        // Only show Subscribe if Square is enabled
+        ...(squareEnabled ? [{ href: '/donations/subscribe', label: 'Subscribe', icon: Crown }] : []),
         { href: '/ranks', label: 'Donor Ranks', icon: Award },
       ]
     },
