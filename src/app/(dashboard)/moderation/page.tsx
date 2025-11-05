@@ -168,7 +168,7 @@ export default async function UnifiedModerationPage() {
             Unified control center for forum, social, and content moderation
           </p>
         </div>
-        {role === 'admin' && (
+        {session.user.role === 'admin' && (
           <Link href="/admin">
             <Button variant="outline" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />

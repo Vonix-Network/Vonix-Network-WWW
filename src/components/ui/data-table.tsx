@@ -3,6 +3,8 @@
  * Professional table with sorting, filtering, and pagination
  */
 
+'use client';
+
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';

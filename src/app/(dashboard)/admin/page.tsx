@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { StatCard } from '@/components/ui/stat-card';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/enterprise-card';
-import { DataTable, type Column } from '@/components/ui/data-table';
+import { RecentUsersTable } from '@/components/admin/recent-users-table';
 
 interface DashboardStats {
   totalUsers: number;
@@ -129,25 +129,7 @@ export default async function EnterpriseAdminPage() {
   const userGrowth = stats.newUsersToday > 0 ? 12 : 0;
   const revenueGrowth = stats.revenueThisMonth > 0 ? 8 : 0;
 
-  const userColumns: Column<RecentUser>[] = [
-    { key: 'username', label: 'Username', sortable: true },
-    { 
-      key: 'role', 
-      label: 'Role', 
-      sortable: true,
-      render: (user) => (
-        <span className="capitalize px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-          {user.role}
-        </span>
-      ),
-    },
-    {
-      key: 'createdAt',
-      label: 'Joined',
-      sortable: true,
-      render: (user) => new Date(user.createdAt).toLocaleDateString(),
-    },
-  ];
+  // Columns and row interactivity are handled in the client component wrapper
 
   return (
     <div className="min-h-screen p-6 lg:p-8 space-y-8 animate-fade-in">
@@ -281,12 +263,7 @@ export default async function EnterpriseAdminPage() {
           <CardDescription>Latest registered members</CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable
-            columns={userColumns}
-            data={recentUsers}
-            keyExtractor={(user) => user.id.toString()}
-            onRowClick={(user) => window.location.href = `/admin/users?id=${user.id}`}
-          />
+          <RecentUsersTable users={recentUsers} />
         </CardContent>
       </Card>
     </div>
