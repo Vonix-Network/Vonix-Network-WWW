@@ -87,7 +87,7 @@ export async function requireMobileAuth(request: NextRequest): Promise<MobileSes
  */
 export async function requireMobileAdmin(request: NextRequest): Promise<MobileSession> {
   const session = await requireMobileAuth(request);
-  if (session.role !== 'admin') {
+  if (session.role !== 'admin' && session.role !== 'superadmin') {
     throw new Error('Forbidden');
   }
   return session;
@@ -98,7 +98,7 @@ export async function requireMobileAdmin(request: NextRequest): Promise<MobileSe
  */
 export async function requireMobileModerator(request: NextRequest): Promise<MobileSession> {
   const session = await requireMobileAuth(request);
-  if (session.role !== 'admin' && session.role !== 'moderator') {
+  if (session.role !== 'admin' && session.role !== 'moderator' && session.role !== 'superadmin') {
     throw new Error('Forbidden');
   }
   return session;

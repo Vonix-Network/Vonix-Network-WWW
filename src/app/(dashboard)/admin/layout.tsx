@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/auth';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { RBAC } from '@/lib/rbac';
 
 export default async function AdminLayout({
   children,
@@ -10,8 +11,8 @@ export default async function AdminLayout({
 }) {
   const session = await getServerSession();
 
-  // Require admin access
-  if (!session || session.user.role !== 'admin') {
+  // Require admin or superadmin access
+  if (!session || !RBAC.canAccessAdmin(session.user.role)) {
     redirect('/dashboard');
   }
 

@@ -211,14 +211,14 @@ export class RBAC {
    * Check if user can manage users
    */
   static canManageUsers(userRole: UserRole | undefined): boolean {
-    return userRole === 'admin';
+    return this.canAccessAdmin(userRole);
   }
 
   /**
    * Check if user can manage donation ranks
    */
   static canManageDonationRanks(userRole: UserRole | undefined): boolean {
-    return userRole === 'admin';
+    return this.canAccessAdmin(userRole);
   }
 
   /**

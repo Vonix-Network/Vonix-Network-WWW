@@ -1,4 +1,5 @@
 import { getServerSession } from '@/lib/auth';
+import { RBAC } from '@/lib/rbac';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -15,9 +16,8 @@ export default async function EditCategoryPage({
   params: { id: string };
 }) {
   const session = await getServerSession();
-  const role = (session?.user as any)?.role;
 
-  if (!session || (role !== 'admin' && role !== 'moderator')) {
+  if (!session || !RBAC.canAccessModeration(session.user.role)) {
     redirect('/dashboard');
   }
 

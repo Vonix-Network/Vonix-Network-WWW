@@ -42,8 +42,8 @@ export function DashboardNav({ user }: NavProps) {
     { href: '/search', label: 'Search', icon: Search },
   ];
 
-  const isAdmin = user.role === 'admin';
-  const isModerator = user.role === 'admin' || user.role === 'moderator';
+  const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+  const isModerator = user.role === 'admin' || user.role === 'moderator' || user.role === 'superadmin';
 
   return (
     <>

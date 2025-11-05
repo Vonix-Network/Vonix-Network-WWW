@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/auth';
+import { RBAC } from '@/lib/rbac';
 
 export default async function ModerationLayout({
   children,
@@ -8,9 +9,8 @@ export default async function ModerationLayout({
 }) {
   const session = await getServerSession();
   
-  // Require moderator or admin access
-  const role = (session?.user as any)?.role;
-  if (!session || (role !== 'admin' && role !== 'moderator')) {
+  // Require moderator, admin, or superadmin access
+  if (!session || !RBAC.canAccessModeration(session.user.role)) {
     redirect('/dashboard');
   }
 

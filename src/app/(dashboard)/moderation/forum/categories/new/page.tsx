@@ -1,4 +1,5 @@
 import { getServerSession } from '@/lib/auth';
+import { RBAC } from '@/lib/rbac';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -8,9 +9,8 @@ import { CategoryForm } from '@/components/moderation/category-form';
 
 export default async function NewCategoryPage() {
   const session = await getServerSession();
-  const role = (session?.user as any)?.role;
 
-  if (!session || (role !== 'admin' && role !== 'moderator')) {
+  if (!session || !RBAC.canAccessModeration(session.user.role)) {
     redirect('/dashboard');
   }
 

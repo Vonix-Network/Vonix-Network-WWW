@@ -1,4 +1,5 @@
 import { getServerSession } from '@/lib/auth';
+import { RBAC } from '@/lib/rbac';
 import { db } from '@/db';
 import { 
   forumCategories, 
@@ -41,8 +42,7 @@ export default async function UnifiedModerationPage() {
   const session = await getServerSession();
 
   // Verify moderator access (already checked in layout, but double-check)
-  const role = (session?.user as any)?.role;
-  if (!session || (role !== 'admin' && role !== 'moderator')) {
+  if (!session || !RBAC.canAccessModeration(session.user.role)) {
     redirect('/dashboard');
   }
 

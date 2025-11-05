@@ -1,4 +1,5 @@
 import { getServerSession } from '@/lib/auth';
+import { RBAC } from '@/lib/rbac';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { desc, sql, count } from 'drizzle-orm';
@@ -10,9 +11,8 @@ import { formatTimeAgo } from '@/lib/date-utils';
 
 export default async function ModeratorUsersPage() {
   const session = await getServerSession();
-  const role = (session?.user as any)?.role;
 
-  if (!session || (role !== 'admin' && role !== 'moderator')) {
+  if (!session || !RBAC.canAccessModeration(session.user.role)) {
     redirect('/dashboard');
   }
 

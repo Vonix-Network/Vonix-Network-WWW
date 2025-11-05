@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
+import { RBAC } from '@/lib/rbac';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { sql, like, or, eq, and, desc, asc } from 'drizzle-orm';
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession();
     
-    if (!session || session.user.role !== 'admin') {
+    if (!session || !RBAC.canAccessAdmin(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
+import { RBAC } from '@/lib/rbac';
 import { db } from '@/db';
 import { reportedContent, users, forumPosts, socialPosts, groupPosts, forumReplies, socialComments, groupPostComments } from '@/db/schema';
 import { desc, eq, sql, count } from 'drizzle-orm';
@@ -8,9 +9,8 @@ import { desc, eq, sql, count } from 'drizzle-orm';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession();
-    const role = (session?.user as any)?.role;
 
-    if (!session || (role !== 'admin' && role !== 'moderator')) {
+    if (!session || !RBAC.canAccessModeration(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -68,9 +68,8 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession();
-    const role = (session?.user as any)?.role;
 
-    if (!session || (role !== 'admin' && role !== 'moderator')) {
+    if (!session || !RBAC.canAccessModeration(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 

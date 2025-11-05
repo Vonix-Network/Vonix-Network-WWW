@@ -19,7 +19,8 @@ export async function requireAuth() {
 // Helper function to require admin role
 export async function requireAdmin() {
   const session = await requireAuth();
-  if (session.user.role !== 'admin') {
+  const { RBAC } = await import('./rbac');
+  if (!RBAC.canAccessAdmin(session.user.role)) {
     throw new Error('Forbidden');
   }
   return session;
@@ -28,7 +29,8 @@ export async function requireAdmin() {
 // Helper function to require moderator or admin role
 export async function requireModerator() {
   const session = await requireAuth();
-  if (session.user.role !== 'admin' && session.user.role !== 'moderator') {
+  const { RBAC } = await import('./rbac');
+  if (!RBAC.canAccessModeration(session.user.role)) {
     throw new Error('Forbidden');
   }
   return session;

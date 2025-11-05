@@ -50,8 +50,8 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin = user?.role === 'admin';
-  const isModerator = user?.role === 'admin' || user?.role === 'moderator';
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isModerator = user?.role === 'admin' || user?.role === 'moderator' || user?.role === 'superadmin';
 
   // Public navigation structure
   const publicNavItems: NavItem[] = [

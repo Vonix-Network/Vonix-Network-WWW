@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
+import { RBAC } from '@/lib/rbac';
 import { db } from '@/db';
 import { settings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -42,8 +43,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check admin role
-    if (session.user.role !== 'admin') {
+    // Check admin or superadmin role
+    if (!RBAC.canAccessAdmin(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
