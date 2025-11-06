@@ -4,6 +4,7 @@ import { assignRankSubscription, upgradeRank } from '@/lib/rank-subscription';
 import { db } from '@/db';
 import { users, donations, donationRanks } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { sendRankPurchaseEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
 
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     const userId = parseInt(session.user.id);
     const body = await request.json();
-    const { rankId, days, amount, paymentId } = body;
+    const { rankId, days, amount, paymentId, subscriptionId } = body;
 
     // Validation
     if (!rankId || !days || !amount) {
@@ -136,6 +137,54 @@ export async function POST(request: NextRequest) {
       }
     } catch (updateError) {
       console.error('Error updating total donated:', updateError);
+    }
+
+    // Send confirmation email
+    try {
+      // Get rank details for email
+      const [rank] = await db
+        .select()
+        .from(donationRanks)
+        .where(eq(donationRanks.id, rankId))
+        .limit(1);
+
+      // Get updated user info for email
+      const [updatedUser] = await db
+        .select({
+          email: users.email,
+          username: users.username,
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (updatedUser?.email && rank && result.expiresAt) {
+        const isSubscription = !!subscriptionId;
+        
+        // Determine subscription interval for display
+        let subscriptionInterval = 'Monthly';
+        if (days === 90) subscriptionInterval = 'Every 3 Months';
+        else if (days === 180) subscriptionInterval = 'Every 6 Months';
+        else if (days === 365) subscriptionInterval = 'Yearly';
+
+        await sendRankPurchaseEmail(updatedUser.email, {
+          username: updatedUser.username,
+          rankName: rank.name,
+          rankBadge: rank.badge || rank.name,
+          rankColor: rank.color,
+          amount,
+          days,
+          expiresAt: result.expiresAt.toISOString(),
+          isSubscription,
+          subscriptionInterval,
+          nextBillingDate: isSubscription ? result.expiresAt.toISOString() : undefined,
+        });
+        
+        console.log(`✅ Confirmation email sent to ${updatedUser.email}`);
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending confirmation email:', emailError);
+      // Don't fail the request if email fails
     }
 
     return NextResponse.json({

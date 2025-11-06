@@ -208,7 +208,7 @@ export const privateMessages = sqliteTable('private_messages', {
   createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
 
-// Donations table
+// Donations table (also serves as receipts)
 export const donations = sqliteTable('donations', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
@@ -216,9 +216,17 @@ export const donations = sqliteTable('donations', {
   minecraftUuid: text('minecraft_uuid'),
   amount: real('amount').notNull(),
   currency: text('currency').default('USD').notNull(),
-  method: text('method'),
+  method: text('method'), // 'stripe', 'square', etc.
   message: text('message'),
   displayed: integer('displayed', { mode: 'boolean' }).default(true).notNull(),
+  // Receipt/Transaction details
+  receiptNumber: text('receipt_number'), // Generated receipt number (unique when set)
+  paymentId: text('payment_id'), // Stripe payment_intent ID or Square payment ID
+  subscriptionId: text('subscription_id'), // If this is a subscription payment
+  rankId: text('rank_id'), // Which rank was purchased
+  days: integer('days'), // Duration purchased
+  paymentType: text('payment_type', { enum: ['one_time', 'subscription', 'subscription_renewal'] }).default('one_time'),
+  status: text('status', { enum: ['completed', 'pending', 'failed', 'refunded'] }).default('completed').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
 

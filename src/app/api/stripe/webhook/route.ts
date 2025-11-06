@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { db } from '@/db';
 import { users, donationRanks } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { sendSubscriptionRenewalEmail, sendRankPurchaseEmail } from '@/lib/email';
 
 /**
  * POST /api/stripe/webhook
@@ -17,9 +18,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 });
   }
 
-  const stripe = new Stripe(stripeSecretKey, {
-    apiVersion: '2025-10-29.clover',
-  });
+  const stripe = new Stripe(stripeSecretKey);
 
   const body = await request.text();
   const sig = request.headers.get('stripe-signature');
@@ -103,6 +102,8 @@ export async function POST(request: NextRequest) {
 
         // Update user's rank
         const amount = invoice.amount_paid / 100; // Convert from cents
+        const isFirstPayment = invoice.billing_reason === 'subscription_create';
+        
         await db
           .update(users)
           .set({
@@ -113,6 +114,69 @@ export async function POST(request: NextRequest) {
           .where(eq(users.id, userId));
 
         console.log(`Rank extended for user ${userId} until ${expiresAt}`);
+
+        // Send email notification
+        try {
+          if (user.email) {
+            if (isFirstPayment) {
+              // First payment - send welcome email
+              await sendRankPurchaseEmail(user.email, {
+                username: user.username,
+                rankName: rank.name,
+                rankBadge: rank.badge || rank.name,
+                rankColor: rank.color,
+                amount,
+                days,
+                expiresAt: expiresAt.toISOString(),
+                isSubscription: true,
+                subscriptionInterval: days === 90 ? 'Every 3 Months' : days === 180 ? 'Every 6 Months' : days === 365 ? 'Yearly' : 'Monthly',
+                nextBillingDate: expiresAt.toISOString(),
+              });
+              console.log(`✅ Welcome email sent to ${user.email}`);
+            } else {
+              // Renewal payment
+              await sendSubscriptionRenewalEmail(user.email, {
+                username: user.username,
+                rankName: rank.name,
+                amount,
+                nextBillingDate: expiresAt.toISOString(),
+              });
+              console.log(`✅ Renewal email sent to ${user.email}`);
+            }
+          }
+        } catch (emailError) {
+          console.error('❌ Error sending subscription email:', emailError);
+          // Don't fail the webhook if email fails
+        }
+        
+        break;
+      }
+
+      case 'checkout.session.completed': {
+        // Checkout session completed - handle both subscriptions and one-time payments
+        const checkoutSession: any = event.data.object;
+        console.log('Checkout session completed:', checkoutSession.id);
+
+        const mode = checkoutSession.mode;
+        const userId = checkoutSession.client_reference_id || 
+                      checkoutSession.subscription?.metadata?.userId ||
+                      checkoutSession.payment_intent?.metadata?.userId;
+
+        if (!userId) {
+          console.error('No user ID found in checkout session');
+          break;
+        }
+
+        if (mode === 'subscription') {
+          // Subscription created via Checkout - webhook will handle via invoice.payment_succeeded
+          console.log('Subscription checkout completed, waiting for first payment event');
+        } else if (mode === 'payment') {
+          // One-time payment via Checkout
+          const paymentIntentId = checkoutSession.payment_intent;
+          console.log('One-time payment checkout completed:', paymentIntentId);
+          
+          // The payment_intent.succeeded webhook will handle rank assignment
+        }
         break;
       }
 

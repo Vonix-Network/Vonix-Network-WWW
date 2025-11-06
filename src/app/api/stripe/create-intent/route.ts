@@ -21,9 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2025-10-29.clover',
-    });
+    const stripe = new Stripe(stripeSecretKey);
 
     const { amount, rankId, days } = await request.json();
 

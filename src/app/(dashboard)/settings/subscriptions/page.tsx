@@ -28,8 +28,13 @@ interface Subscription {
   amount: number;
   currency: string;
   interval: string;
+  intervalCount?: number;
   nextBillingDate?: string;
   canceledDate?: string;
+  cancelAtPeriodEnd?: boolean;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  paused?: boolean;
 }
 
 export default function SubscriptionsPage() {
@@ -98,8 +103,12 @@ export default function SubscriptionsPage() {
     }
   }
 
-  async function handleCancelSubscription(subscriptionId: string) {
-    if (!confirm('Are you sure you want to cancel this subscription? This cannot be undone.')) {
+  async function handleCancelSubscription(subscriptionId: string, immediate = false) {
+    const message = immediate 
+      ? 'Cancel immediately and lose access now? You will NOT be refunded for unused time.'
+      : 'Cancel at end of billing period? You\'ll keep access until then.';
+    
+    if (!confirm(message)) {
       return;
     }
 
@@ -108,7 +117,7 @@ export default function SubscriptionsPage() {
 
       // Use appropriate API endpoint based on provider
       const apiEndpoint = paymentProvider === 'stripe'
-        ? `/api/stripe/subscription?subscriptionId=${subscriptionId}`
+        ? `/api/stripe/subscription?subscriptionId=${subscriptionId}${immediate ? '&immediate=true' : ''}`
         : `/api/square/subscription?subscriptionId=${subscriptionId}`;
 
       const response = await fetch(apiEndpoint, { method: 'DELETE' });
@@ -116,7 +125,11 @@ export default function SubscriptionsPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Subscription canceled successfully');
+        if (immediate) {
+          toast.success('Subscription canceled immediately');
+        } else {
+          toast.success('Subscription will cancel at end of billing period');
+        }
         loadSubscriptions();
       } else {
         toast.error(data.error || 'Failed to cancel subscription');
@@ -129,14 +142,52 @@ export default function SubscriptionsPage() {
     }
   }
 
+  async function handleResumeSubscription(subscriptionId: string) {
+    try {
+      setActionLoading(subscriptionId);
+
+      const response = await fetch('/api/stripe/subscription', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscriptionId,
+          action: 'resume',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Subscription resumed successfully!');
+        loadSubscriptions();
+      } else {
+        toast.error(data.error || 'Failed to resume subscription');
+      }
+    } catch (error) {
+      console.error('Error resuming subscription:', error);
+      toast.error('Failed to resume subscription');
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   const getStatusBadge = (status: string) => {
-    switch (status.toUpperCase()) {
-      case 'ACTIVE':
+    switch (status.toLowerCase()) {
+      case 'active':
         return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>;
-      case 'CANCELED':
+      case 'canceled':
+      case 'cancelled':
         return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Canceled</Badge>;
-      case 'PAUSED':
+      case 'paused':
         return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Paused</Badge>;
+      case 'incomplete':
+        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Pending Payment</Badge>;
+      case 'incomplete_expired':
+        return <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">Expired</Badge>;
+      case 'trialing':
+        return <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">Trial</Badge>;
+      case 'past_due':
+        return <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">Past Due</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -278,16 +329,79 @@ export default function SubscriptionsPage() {
                               </span>
                             </div>
                           )}
+                          
+                          {sub.status.toLowerCase() === 'incomplete' && (
+                            <div className="flex items-center gap-2 text-blue-400">
+                              <AlertTriangle className="h-4 w-4" />
+                              <span className="text-xs">
+                                Pending first payment - complete payment to activate
+                              </span>
+                            </div>
+                          )}
+                          
+                          {sub.cancelAtPeriodEnd && !sub.canceledDate && (
+                            <div className="flex items-center gap-2 text-yellow-400">
+                              <AlertTriangle className="h-4 w-4" />
+                              <span className="text-xs font-semibold">
+                                Cancels on {new Date(sub.currentPeriodEnd || sub.nextBillingDate || '').toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {sub.status.toUpperCase() === 'ACTIVE' && (
-                        <div className="flex gap-2">
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        {/* Active subscription - show cancel button */}
+                        {sub.status.toLowerCase() === 'active' && !sub.cancelAtPeriodEnd && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCancelSubscription(sub.id, false)}
+                              disabled={actionLoading === sub.id}
+                              className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
+                            >
+                              {actionLoading === sub.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Pause className="h-4 w-4 mr-1" />
+                                  Cancel (Keep Access)
+                                </>
+                              )}
+                            </Button>
+                          </>
+                        )}
+                        
+                        {/* Scheduled to cancel - show resume button */}
+                        {sub.status.toLowerCase() === 'active' && sub.cancelAtPeriodEnd && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleCancelSubscription(sub.id)}
+                            onClick={() => handleResumeSubscription(sub.id)}
                             disabled={actionLoading === sub.id}
+                            className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                          >
+                            {actionLoading === sub.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Play className="h-4 w-4 mr-1" />
+                                Resume
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        
+                        {/* Incomplete subscription - show cancel button */}
+                        {sub.status.toLowerCase() === 'incomplete' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancelSubscription(sub.id, true)}
+                            disabled={actionLoading === sub.id}
+                            className="border-red-500/30 text-red-400 hover:bg-red-500/10"
                           >
                             {actionLoading === sub.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -298,8 +412,8 @@ export default function SubscriptionsPage() {
                               </>
                             )}
                           </Button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

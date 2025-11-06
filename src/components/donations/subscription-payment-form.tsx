@@ -396,15 +396,9 @@ function StripePaymentContent({
   async function handleStripePayment() {
     console.log('Handle Stripe payment called:', { stripe: !!stripe, elements: !!elements, isRecurring });
     
-    if (!stripe || !elements) {
-      console.error('Payment system not ready:', { stripe: !!stripe, elements: !!elements });
+    if (!stripe) {
+      console.error('Stripe not ready');
       toast.error('Payment system not initialized. Please refresh the page.');
-      return;
-    }
-
-    const cardElement = elements.getElement(CardElement);
-    if (!cardElement) {
-      toast.error('Card element not found');
       return;
     }
 
@@ -412,50 +406,59 @@ function StripePaymentContent({
       setProcessing(true);
 
       if (isRecurring) {
-        // Create recurring subscription
-        const subResponse = await fetch('/api/stripe/create-subscription', {
+        // Recurring subscription - redirect to Stripe Checkout (no card element needed)
+        console.log('Creating Stripe Checkout session for subscription:', { rankId, days, amount: price });
+        
+        const checkoutResponse = await fetch('/api/stripe/create-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             rankId,
             days,
             amount: price,
+            isRecurring: true,
           }),
         });
 
-        const { clientSecret, subscriptionId } = await subResponse.json();
-
-        if (!clientSecret) {
-          toast.error('Failed to create subscription');
+        if (!checkoutResponse.ok) {
+          const errorData = await checkoutResponse.json();
+          console.error('Checkout session creation failed:', errorData);
+          toast.error(errorData.error || 'Failed to create checkout session');
+          setProcessing(false);
           return;
         }
 
-        // Confirm payment
-        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-          payment_method: {
-            card: cardElement,
-          },
-        });
-
-        if (error) {
-          toast.error(error.message || 'Payment failed');
+        const { url } = await checkoutResponse.json();
+        
+        if (!url) {
+          toast.error('No checkout URL received');
+          setProcessing(false);
           return;
         }
 
-        if (paymentIntent?.status === 'succeeded') {
-          setPaymentSuccess(true);
-          toast.success(`${rankName} subscription activated!`);
-          
-          if (onSuccess) {
-            onSuccess();
-          }
-          
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 2500);
-        }
+        console.log('Redirecting to Stripe Checkout...');
+        toast.success('Redirecting to secure checkout...');
+        
+        // Redirect to Stripe Checkout
+        window.location.href = url;
+        
+        // Keep processing state true since we're redirecting
+        return;
       } else {
-        // One-time payment
+        // One-time payment - need card element
+        if (!elements) {
+          console.error('Elements not ready');
+          toast.error('Payment system not initialized. Please refresh the page.');
+          setProcessing(false);
+          return;
+        }
+
+        const cardElement = elements.getElement(CardElement);
+        if (!cardElement) {
+          toast.error('Card element not found');
+          setProcessing(false);
+          return;
+        }
         const intentResponse = await fetch('/api/stripe/create-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -538,21 +541,42 @@ function StripePaymentContent({
 
   return (
     <div className="space-y-4">
-      <div className="p-4 bg-slate-900/50 border border-slate-700 rounded-lg">
-        <CardElement options={{
-          style: {
-            base: {
-              fontSize: '16px',
-              color: '#e5e7eb',
-              '::placeholder': { color: '#6b7280' },
-              backgroundColor: '#0f172a',
+      {isRecurring ? (
+        // Recurring subscription - show Stripe Checkout message
+        <div className="p-6 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="text-cyan-400 mt-0.5">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-white mb-1">Secure Checkout via Stripe</h4>
+              <p className="text-sm text-gray-300">
+                You'll be redirected to Stripe's secure checkout page to complete your subscription. 
+                Stripe supports all major credit cards, Apple Pay, Google Pay, and more.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // One-time payment - show card input
+        <div className="p-4 bg-slate-900/50 border border-slate-700 rounded-lg">
+          <CardElement options={{
+            style: {
+              base: {
+                fontSize: '16px',
+                color: '#e5e7eb',
+                '::placeholder': { color: '#6b7280' },
+                backgroundColor: '#0f172a',
+              },
+              invalid: {
+                color: '#ef4444',
+              },
             },
-            invalid: {
-              color: '#ef4444',
-            },
-          },
-        }} />
-      </div>
+          }} />
+        </div>
+      )}
       
       <Button
         onClick={handleStripePayment}
@@ -568,10 +592,10 @@ function StripePaymentContent({
         ) : processing ? (
           <>
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            Processing Payment...
+            {isRecurring ? 'Redirecting to Checkout...' : 'Processing Payment...'}
           </>
         ) : (
-          <>Pay ${price}</>
+          <>{isRecurring ? `Continue to Secure Checkout →` : `Pay $${price}`}</>
         )}
       </Button>
 

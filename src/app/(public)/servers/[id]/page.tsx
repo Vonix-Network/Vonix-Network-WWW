@@ -4,11 +4,11 @@ import { servers } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Server, Users, Globe, Copy, ExternalLink, Map, Activity } from 'lucide-react';
+import { ArrowLeft, Server, Users, Globe, ExternalLink, Map, Activity, Wifi, Copy, Loader2 } from 'lucide-react';
 import { CopyButton } from '@/components/ui/copy-button';
 import { fetchServerStatus, formatServerAddress } from '@/lib/server-status';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Force dynamic rendering and disable all caching
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -33,7 +33,6 @@ async function ServerContent({ params }: ServerPageProps) {
     notFound();
   }
 
-  // Fetch real-time status from mcstatus.io (live data only, no database update)
   let server = serverRaw;
   let playerList: Array<{ name: string; uuid: string }> = [];
   let serverIcon: string | null = null;
@@ -42,24 +41,14 @@ async function ServerContent({ params }: ServerPageProps) {
   try {
     const serverAddress = formatServerAddress(server.ipAddress, server.port);
     const status = await fetchServerStatus(serverAddress);
-    
-    // Debug logging
-    console.log('mcstatus.io response:', {
-      online: status.online,
-      players: status.players,
-      version: status.version,
-    });
 
-    // Get player list
     if (status.playerList) {
       playerList = status.playerList;
     }
 
-    // Get server icon and MOTD
     serverIcon = status.icon || null;
     motd = status.motd || null;
 
-    // Update local server object with live data (no database update)
     server = {
       ...server,
       status: status.online ? 'online' : 'offline',
@@ -67,15 +56,8 @@ async function ServerContent({ params }: ServerPageProps) {
       playersMax: status.players?.max || 0,
       version: status.version || null,
     };
-    
-    console.log('Server after update:', {
-      playersOnline: server.playersOnline,
-      playersMax: server.playersMax,
-      status: server.status,
-    });
   } catch (error) {
     console.error(`Error fetching server status:`, error);
-    // Set server as offline on error
     server = {
       ...server,
       status: 'offline',
@@ -88,173 +70,199 @@ async function ServerContent({ params }: ServerPageProps) {
   const serverAddress = `${server.ipAddress}${server.port !== 25565 ? `:${server.port}` : ''}`;
 
   return (
-    <div>
-      <div className="max-w-6xl mx-auto px-4 py-12 space-y-8">
-        {/* Back Button */}
-        <Link
-          href="/servers"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Servers
-        </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="container mx-auto px-6 py-12">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Back Button */}
+          <Link
+            href="/servers"
+            className="inline-flex items-center gap-2 text-gray-400 hover:text-cyan-400 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Servers
+          </Link>
 
-        {/* Server Header */}
-        <div className="glass border border-blue-500/20 rounded-2xl p-8">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-white mb-3">{server.name}</h1>
-              {server.modpackName && (
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 text-purple-400 rounded-full">
-                  <Server className="h-4 w-4" />
-                  {server.modpackName}
+          {/* Server Header Card */}
+          <Card className="border-slate-700 bg-slate-800/50 overflow-hidden">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10 blur-3xl"></div>
+              <CardContent className="p-8 relative z-10">
+                <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-6">
+                  <div className="flex-1">
+                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">{server.name}</h1>
+                    {server.description && (
+                      <p className="text-gray-300 text-lg mb-4">{server.description}</p>
+                    )}
+                    {server.modpackName && (
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-full">
+                        <Server className="h-4 w-4" />
+                        {server.modpackName}
+                      </div>
+                    )}
+                  </div>
+                  {server.status === 'online' ? (
+                    <span className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full font-semibold">
+                      <Wifi className="h-5 w-5" />
+                      Online
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full font-semibold">
+                      <Activity className="h-5 w-5" />
+                      Offline
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
-            <div className={`px-4 py-2 rounded-full font-medium ${
-              server.status === 'online' 
-                ? 'bg-green-500/20 text-blue-400' 
-                : 'bg-red-500/20 text-red-400'
-            }`}>
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                {server.status === 'online' ? 'Online' : 'Offline'}
-              </div>
-            </div>
-          </div>
 
-          {server.description && (
-            <p className="text-gray-300 text-lg mb-6">{server.description}</p>
+                {/* Server Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-gray-400 mb-2">
+                      <Users className="h-4 w-4 text-cyan-400" />
+                      <span className="text-sm">Players</span>
+                    </div>
+                    <div className="text-2xl font-bold text-white">
+                      {server.playersOnline} / {server.playersMax}
+                    </div>
+                  </div>
+
+                  {server.version && (
+                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-gray-400 mb-2">
+                        <Globe className="h-4 w-4 text-blue-400" />
+                        <span className="text-sm">Version</span>
+                      </div>
+                      <div className="text-xl font-bold text-white">{server.version}</div>
+                    </div>
+                  )}
+
+                  <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-gray-400 mb-2">
+                      <Server className="h-4 w-4 text-purple-400" />
+                      <span className="text-sm">IP Address</span>
+                    </div>
+                    <div className="text-lg font-mono text-purple-400 truncate">{server.ipAddress}</div>
+                  </div>
+
+                  {server.port !== 25565 && (
+                    <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-gray-400 mb-2">
+                        <Server className="h-4 w-4 text-pink-400" />
+                        <span className="text-sm">Port</span>
+                      </div>
+                      <div className="text-2xl font-bold text-white">{server.port}</div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </div>
+          </Card>
+
+          {/* Server Address Card */}
+          <Card className="border-cyan-500/30 bg-gradient-to-br from-cyan-500/5 to-blue-500/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Server className="h-6 w-6 text-cyan-400" />
+                Connect to Server
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row items-stretch gap-4">
+                <div className="flex-1 bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                  <div className="text-sm text-gray-400 mb-2">Server Address</div>
+                  <div className="font-mono text-2xl text-cyan-400 font-bold">
+                    {serverAddress}
+                  </div>
+                </div>
+                <CopyButton text={serverAddress} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Online Players */}
+          {server.status === 'online' && playerList.length > 0 && (
+            <Card className="border-slate-700 bg-slate-800/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <Users className="h-6 w-6 text-cyan-400" />
+                  Online Players ({playerList.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {playerList.map((player) => (
+                    <div
+                      key={player.uuid}
+                      className="flex items-center gap-3 bg-slate-900/50 border border-slate-700 rounded-lg p-3 hover:border-cyan-500/30 transition-all"
+                    >
+                      <img
+                        src={`https://mc-heads.net/avatar/${player.uuid}/32`}
+                        alt={player.name}
+                        className="w-8 h-8 rounded pixelated"
+                      />
+                      <span className="text-white font-medium">{player.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          {/* Server Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="glass border border-white/10 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-gray-400 mb-2">
-                <Users className="h-4 w-4" />
-                <span className="text-sm">Players</span>
-              </div>
-              <div className="text-2xl font-bold text-white">
-                {server.playersOnline} / {server.playersMax}
-              </div>
-            </div>
-
-            {server.version && (
-              <div className="glass border border-white/10 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-gray-400 mb-2">
-                  <Globe className="h-4 w-4" />
-                  <span className="text-sm">Version</span>
+          {/* Bluemap Integration */}
+          {server.bluemapUrl && (
+            <Card className="border-blue-500/30 bg-slate-800/50">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <Map className="h-6 w-6 text-blue-400" />
+                    Live Map
+                  </CardTitle>
+                  <a
+                    href={server.bluemapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg hover:bg-blue-500/30 transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Open in New Tab
+                  </a>
                 </div>
-                <div className="text-2xl font-bold text-white">{server.version}</div>
-              </div>
-            )}
-
-            <div className="glass border border-white/10 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-gray-400 mb-2">
-                <Server className="h-4 w-4" />
-                <span className="text-sm">IP Address</span>
-              </div>
-              <div className="text-lg font-mono text-blue-400">{server.ipAddress}</div>
-            </div>
-
-            {server.port !== 25565 && (
-              <div className="glass border border-white/10 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-gray-400 mb-2">
-                  <Server className="h-4 w-4" />
-                  <span className="text-sm">Port</span>
-                </div>
-                <div className="text-2xl font-bold text-white">{server.port}</div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Online Players */}
-        {server.status === 'online' && playerList.length > 0 && (
-          <div className="glass border border-blue-500/20 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Users className="h-6 w-6 text-blue-400" />
-              Online Players ({playerList.length})
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {playerList.map((player) => (
-                <div
-                  key={player.uuid}
-                  className="flex items-center gap-3 glass border border-white/10 rounded-lg p-3 hover:border-blue-500/30 transition-all"
-                >
-                  <img
-                    src={`https://mc-heads.net/avatar/${player.uuid}/32`}
-                    alt={player.name}
-                    className="w-8 h-8 rounded"
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-lg overflow-hidden border border-blue-500/20">
+                  <iframe
+                    src={server.bluemapUrl}
+                    className="w-full h-[600px]"
+                    title={`${server.name} Bluemap`}
+                    allowFullScreen
                   />
-                  <span className="text-white font-medium">{player.name}</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Server Address */}
-        <div className="glass border border-blue-500/20 rounded-2xl p-6">
-          <h2 className="text-xl font-bold text-white mb-4">Connect to Server</h2>
-          <div className="flex items-center gap-4">
-            <div className="flex-1 glass border border-white/10 rounded-lg p-4">
-              <div className="text-sm text-gray-400 mb-2">Server Address</div>
-              <div className="font-mono text-2xl text-blue-400 font-bold">
-                {serverAddress}
-              </div>
-            </div>
-            <CopyButton text={serverAddress} />
-          </div>
+          {/* Modpack Link */}
+          {server.curseforgeUrl && (
+            <Card className="border-orange-500/30 bg-gradient-to-br from-orange-500/5 to-red-500/5">
+              <CardHeader>
+                <CardTitle className="text-white">Modpack Required</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-300 mb-6">
+                  This server requires a modpack to play. Download it from CurseForge to get started.
+                </p>
+                <a
+                  href={server.curseforgeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all"
+                >
+                  <ExternalLink className="h-5 w-5" />
+                  Download Modpack from CurseForge
+                </a>
+              </CardContent>
+            </Card>
+          )}
         </div>
-
-        {/* Bluemap Integration */}
-        {server.bluemapUrl && (
-          <div className="glass border border-blue-500/20 rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Map className="h-6 w-6 text-blue-400" />
-                Live Map
-              </h2>
-              <a
-                href={server.bluemapUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Open in New Tab
-              </a>
-            </div>
-            <div className="rounded-lg overflow-hidden border border-blue-500/20">
-              <iframe
-                src={server.bluemapUrl}
-                className="w-full h-[600px]"
-                title={`${server.name} Bluemap`}
-                allowFullScreen
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Modpack Link */}
-        {server.curseforgeUrl && (
-          <div className="glass border border-orange-500/20 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Modpack</h2>
-            <p className="text-gray-400 mb-4">
-              This server requires a modpack to play. Download it from CurseForge:
-            </p>
-            <a
-              href={server.curseforgeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg font-medium hover-lift glow-orange"
-            >
-              <ExternalLink className="h-5 w-5" />
-              Download Modpack
-            </a>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -262,61 +270,42 @@ async function ServerContent({ params }: ServerPageProps) {
 
 function ServerDetailSkeleton() {
   return (
-    <div className="max-w-6xl mx-auto fade-in-up">
-      {/* Back Button Skeleton */}
-      <div className="mb-6">
-        <div className="h-10 w-32 bg-gray-700 rounded animate-pulse" />
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="container mx-auto px-6 py-12">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Back Button Skeleton */}
+          <div className="h-10 w-32 bg-slate-700 rounded animate-pulse" />
 
-      {/* Header Skeleton */}
-      <div className="glass border border-blue-500/20 rounded-2xl p-8 mb-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-          <div className="w-24 h-24 bg-gray-700 rounded-xl animate-pulse" />
-          <div className="flex-1">
-            <div className="h-12 w-64 bg-gray-700 rounded animate-pulse mb-4" />
-            <div className="h-6 w-48 bg-gray-700 rounded animate-pulse mb-2" />
-            <div className="h-5 w-32 bg-gray-700 rounded animate-pulse" />
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="h-8 w-24 bg-gray-700 rounded-full animate-pulse" />
-            <div className="h-6 w-32 bg-gray-700 rounded animate-pulse" />
-          </div>
-        </div>
-      </div>
-
-      {/* Server Info Grid Skeleton */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Server Details Skeleton */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="glass border border-blue-500/20 rounded-2xl p-6">
-            <div className="h-8 w-40 bg-gray-700 rounded animate-pulse mb-4" />
-            <div className="space-y-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <div className="h-5 w-24 bg-gray-700 rounded animate-pulse" />
-                  <div className="h-5 w-32 bg-gray-700 rounded animate-pulse" />
+          {/* Header Card Skeleton */}
+          <Card className="border-slate-700 bg-slate-800/50">
+            <CardContent className="p-8">
+              <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-6">
+                <div className="flex-1 space-y-4">
+                  <div className="h-12 w-64 bg-slate-700 rounded animate-pulse" />
+                  <div className="h-6 w-96 bg-slate-700 rounded animate-pulse" />
+                  <div className="h-8 w-32 bg-slate-700 rounded-full animate-pulse" />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="glass border border-blue-500/20 rounded-2xl p-6">
-            <div className="h-8 w-32 bg-gray-700 rounded animate-pulse mb-4" />
-            <div className="h-24 w-full bg-gray-700 rounded animate-pulse" />
-          </div>
-        </div>
-
-        {/* Player List Skeleton */}
-        <div className="glass border border-blue-500/20 rounded-2xl p-6">
-          <div className="h-8 w-40 bg-gray-700 rounded animate-pulse mb-4" />
-          <div className="space-y-3">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-700 rounded animate-pulse" />
-                <div className="h-5 w-24 bg-gray-700 rounded animate-pulse" />
+                <div className="h-10 w-24 bg-slate-700 rounded-full animate-pulse" />
               </div>
-            ))}
-          </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
+                    <div className="h-4 w-20 bg-slate-700 rounded animate-pulse mb-2" />
+                    <div className="h-8 w-24 bg-slate-700 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Server Address Skeleton */}
+          <Card className="border-slate-700 bg-slate-800/50">
+            <CardContent className="p-6">
+              <div className="h-8 w-40 bg-slate-700 rounded animate-pulse mb-4" />
+              <div className="h-16 w-full bg-slate-700 rounded animate-pulse" />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
