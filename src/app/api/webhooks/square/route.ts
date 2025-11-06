@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleSubscriptionRenewal, handleSubscriptionPaymentFailure } from '@/lib/square/recurring-subscriptions';
+import crypto from 'crypto';
 
 export const runtime = 'nodejs';
 
@@ -15,17 +16,50 @@ export const runtime = 'nodejs';
  *    - subscription.created
  *    - payment.updated
  * 4. Copy signature key to .env as SQUARE_WEBHOOK_SIGNATURE_KEY
+ * 5. Add NEXT_PUBLIC_APP_URL to .env for signature verification
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify Square webhook signature (recommended for production)
-    const signature = request.headers.get('x-square-signature');
+    // Get signature and raw body
+    const signature = request.headers.get('x-square-hmacsha256-signature');
     const webhookSignatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
     
-    // TODO: Implement signature verification
-    // For now, we'll trust the webhook (only do this in development!)
+    // Get raw body for signature verification
+    const rawBody = await request.text();
     
-    const body = await request.json();
+    // SECURITY: Verify webhook signature in production
+    if (process.env.NODE_ENV === 'production') {
+      if (!webhookSignatureKey) {
+        console.error('❌ CRITICAL: SQUARE_WEBHOOK_SIGNATURE_KEY not configured');
+        return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
+      }
+      
+      if (!signature) {
+        console.error('❌ SECURITY: Missing webhook signature');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
+      // Verify signature using HMAC-SHA256
+      const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://yoursite.com'}/api/webhooks/square`;
+      const payload = webhookUrl + rawBody;
+      const hmac = crypto.createHmac('sha256', webhookSignatureKey);
+      hmac.update(payload);
+      const expectedSignature = hmac.digest('base64');
+      
+      if (signature !== expectedSignature) {
+        console.error('❌ SECURITY: Invalid webhook signature');
+        console.error('Expected:', expectedSignature);
+        console.error('Received:', signature);
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
+      console.log('✅ Webhook signature verified');
+    } else {
+      console.warn('⚠️  DEVELOPMENT: Skipping webhook signature verification');
+    }
+    
+    // Parse body after verification
+    const body = JSON.parse(rawBody);
     const { type, data } = body;
 
     console.log(`📨 Square webhook received: ${type}`);

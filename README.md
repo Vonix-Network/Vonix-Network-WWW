@@ -1,395 +1,88 @@
-# 🎮 Vonix Network - Minecraft Community Platform
+# Vonix Network - Web Application
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.0-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.2-blue?style=for-the-badge&logo=react)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Turso](https://img.shields.io/badge/Turso-Database-green?style=for-the-badge)](https://turso.tech/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker)](https://docker.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
-
-A modern, full-stack Minecraft community platform built with Next.js 16, React 19, and TypeScript 5.9, featuring real-time server status, integrated forums, social features, and comprehensive admin tools.
-
----
-
-## 📚 Quick Links
-
-| For | Guide | Description |
-|-----|-------|-------------|
-| 🚀 **Getting Started** | [QUICKSTART.md](QUICKSTART.md) | 5-minute setup guide |
-| 🤖 **AI Assistants** | [AI_GUIDE.md](AI_GUIDE.md) | Complete codebase guide for AI |
-| ✅ **Validation** | [SETUP_CHECKLIST.md](SETUP_CHECKLIST.md) | Testing checklist |
-| 🗄️ **Database** | [src/db/README.md](src/db/README.md) | Database management |
-| 🔄 **Multi-DB Support** | [docs/MULTI_DATABASE_GUIDE.md](docs/MULTI_DATABASE_GUIDE.md) | PostgreSQL, MySQL, MariaDB |
-| 🎮 **XP System** | [docs/XP_INTEGRATION_GUIDE.md](docs/XP_INTEGRATION_GUIDE.md) | Leveling & achievements |
+Welcome to the official web application for the Vonix Network. This project serves as the central hub for our community, providing a feature-rich platform for players, staff, and visitors.
 
 ---
 
 ## ✨ Features
 
-### 🎯 Core Features
-- **Real-time Server Status** - Live Minecraft server monitoring with player counts
-- **Integrated Forums** - Full-featured discussion platform with categories and moderation
-- **Social Platform** - Community posts, comments, and engagement system
-- **XP & Leveling System** - Gamification with 100+ levels, achievements, and rewards
-- **Friend System** - Send requests, manage friends, real-time status updates
-- **Notifications** - Real-time alerts with notification bell and auto-refresh
-- **Blog System** - Admin-managed blog with rich content and SEO optimization
-- **Events System** - Community events with RSVP and attendee tracking
-- **Minecraft Authentication** - Seamless in-game registration and login
-- **Admin Dashboard** - Comprehensive management tools for community leaders
-- **Donation System** - Integrated payment processing with rank management
-- **Discord Integration** - Real-time chat and bot functionality
-
-### 🚀 Technical Features
-- **Real-time Updates** - Instant UI updates without page refreshes
-- **Error Boundaries** - Graceful error handling with recovery options
-- **Progressive Web App** - Mobile-optimized with offline capabilities
-- **Performance Optimized** - Fast loading with static UI and dynamic content
-- **Scalable Architecture** - Built for growth with efficient database design
-- **Security First** - Comprehensive authentication and authorization
-- **Type-Safe** - Full TypeScript coverage with Zod validation
-- **Docker Ready** - Easy deployment with containerization
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend       │    │   Database      │
-│   (Next.js 16)  │◄──►│   (API Routes)  │◄──►│   (Turso)       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   WebSocket     │    │   Discord Bot   │    │   File Storage  │
-│   (Real-time)   │    │   Integration   │    │   (Images)      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Next.js 16** - React framework with App Router and Turbopack
-- **React 19** - Latest React with concurrent features
-- **TypeScript 5.9** - Advanced type system
-- **Tailwind CSS** - Utility-first styling
-- **Lucide React** - Beautiful icons
-- **React Query** - Data fetching and caching
-- **Zustand** - State management
-
-### Backend
-- **Next.js API Routes** - Serverless API endpoints
-- **NextAuth.js** - Authentication system
-- **Drizzle ORM** - Type-safe database queries
-- **Multi-Database Support** - Turso, PostgreSQL, MySQL, MariaDB
-- **WebSocket** - Real-time communication
-- **Discord.js** - Discord bot integration
-
-### Infrastructure
-- **Docker** - Containerization
-- **Kubernetes** - Orchestration (optional)
-- **Nginx** - Reverse proxy
-- **Redis** - Caching (optional)
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- Docker (optional)
-- Turso account (for database)
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/vonix-network.git
-cd vonix-network
-```
-
-### 2. Install Dependencies
-```bash
-npm install
-```
-
-### 3. Environment Setup
-```bash
-cp .env.example .env.local
-# Edit .env.local with your configuration
-```
-
-### 4. Database Setup
-```bash
-# Initialize complete database (one command!)
-npm run db:init
-```
-
-This single command:
-- ✅ Creates all tables
-- ✅ Runs all migrations
-- ✅ Adds XP & Leveling system
-- ✅ Seeds achievements and rewards
-- ✅ Verifies integrity
-
-### 5. Start Development Server
-```bash
-# Start web app only
-npm run dev
-
-# OR start web app + Discord bot together
-npm run dev:all
-```
-
-Visit `http://localhost:3000` to see the application.
-
-### 6. Verify Installation
-```bash
-# Run code quality checks
-npm run validate
-
-# Check health endpoint
-npm run health
-```
-
-## 📁 Project Structure
-
-```
-vonix-network/
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── (auth)/            # Authentication pages
-│   │   ├── (dashboard)/       # Protected dashboard pages
-│   │   ├── (public)/          # Public pages
-│   │   └── api/               # API routes
-│   ├── components/            # React components
-│   │   ├── admin/             # Admin-specific components
-│   │   ├── forum/             # Forum components
-│   │   ├── social/            # Social platform components
-│   │   └── ui/                # Reusable UI components
-│   ├── db/                    # Database configuration
-│   ├── lib/                   # Utility libraries
-│   └── types/                 # TypeScript type definitions
-├── docker/                    # Docker configuration
-├── k8s/                       # Kubernetes manifests
-├── scripts/                   # Utility scripts
-└── public/                    # Static assets
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env.local` file with the following variables:
-
-```env
-# Database
-TURSO_DATABASE_URL=your_turso_database_url
-TURSO_AUTH_TOKEN=your_turso_auth_token
-
-# Authentication
-NEXTAUTH_SECRET=your_nextauth_secret
-NEXTAUTH_URL=http://localhost:3000
-
-# Discord
-DISCORD_CLIENT_ID=your_discord_client_id
-DISCORD_CLIENT_SECRET=your_discord_client_secret
-DISCORD_BOT_TOKEN=your_discord_bot_token
-
-# Minecraft Integration
-MINECRAFT_API_KEY=your_minecraft_api_key
-
-# Optional
-REDIS_URL=your_redis_url
-```
-
-### Database Schema
-
-The application uses a comprehensive database schema with the following main tables:
-
-- **users** - User accounts and profiles
-- **servers** - Minecraft server information
-- **forum_posts** - Forum topics and posts
-- **forum_replies** - Forum replies and comments
-- **social_posts** - Social platform posts
-- **donations** - Donation records
-- **donation_ranks** - Donation tier definitions
-- **xp_transactions** - XP gain/loss history
-- **achievements** - Achievement system (10 seeded)
-- **level_rewards** - Level milestone rewards
-
-See [DATABASE.md](docs/DATABASE.md) for detailed schema information.
-
-### Database Management
-
-```bash
-# Complete initialization (first-time setup)
-npm run db:init
-
-# Open visual database browser
-npm run db:studio
-
-# Generate migrations from schema changes
-npm run db:generate
-
-# Push schema changes directly
-npm run db:push
-```
-
-For detailed database documentation, see [src/db/README.md](src/db/README.md).
-
-## 🚀 Deployment
-
-### Docker Deployment
-
-```bash
-# Development environment
-npm run docker:up:dev
-
-# Production environment
-npm run docker:build
-npm run docker:up
-
-# View logs
-npm run docker:logs
-
-# Stop containers
-npm run docker:down
-```
-
-### Kubernetes Deployment
-
-```bash
-# Deploy to cluster
-npm run k8s:deploy
-
-# Check deployment status
-npm run k8s:status
-
-# View logs
-npm run k8s:logs
-
-# Restart deployment
-npm run k8s:restart
-```
-
-### Manual Deployment
-
-```bash
-# Production deployment (with validation)
-npm run deploy:production
-
-# OR manually
-npm run build
-npm run start:all  # Web + Bot
-
-# OR just web
-npm start
-```
-
-## 📚 Documentation
-
-### 🚀 Quick Start
-- **[Setup Guide](SetupGuide.md)** - Detailed setup instructions
-- **[Changelog](CHANGELOG.md)** - Version history and updates
-
-### 📖 Guides
-- **[Features](docs/FEATURES.md)** - Complete feature list and status
-- **[API Documentation](docs/API.md)** - API endpoint reference
-- **[Database Schema](docs/DATABASE.md)** - Database structure and migrations
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment strategies
-- **[Development History](docs/DEVELOPMENT_HISTORY.md)** - Implementation timeline and progress
-- **[Scripts Guide](docs/SCRIPTS.md)** - Available npm scripts and utilities
-- **[Space.js Guide](docs/SPACE_JS_GUIDE.md)** - Space.js animation library documentation
-- **[Beginner Guide](docs/BEGINNER_GUIDE.md)** - Getting started for new developers
-
-### 🤝 Contributing
-- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to the project
-- **[Contributors](CONTRIBUTORS.md)** - List of project contributors
-- **[Security Policy](SECURITY.md)** - Security guidelines and vulnerability reporting
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📊 Performance
-
-- **Lighthouse Score**: 95+ across all metrics
-- **First Contentful Paint**: < 1.5s
-- **Largest Contentful Paint**: < 2.5s
-- **Time to Interactive**: < 3.0s
-- **Cumulative Layout Shift**: < 0.1
-
-## 🔒 Security
-
-- **Authentication**: NextAuth.js with multiple providers
-- **Authorization**: Role-based access control
-- **Data Validation**: Zod schema validation
-- **SQL Injection**: Protected with Drizzle ORM
-- **XSS Protection**: React's built-in protection
-- **CSRF Protection**: NextAuth.js CSRF tokens
-
-## 📈 Monitoring
-
-The application includes comprehensive monitoring:
-
-- **Performance Metrics**: Real-time performance tracking
-- **Error Logging**: Structured error logging with Pino
-- **Health Checks**: API health monitoring
-- **Database Monitoring**: Query performance tracking
-
-## 🎯 Roadmap
-
-### Phase 1 - Critical Features ✅ COMPLETE
-- ✅ Notifications System
-- ✅ Friend System (API + UI)
-- ✅ Dashboard Stats Fix
-
-### Phase 2 - High Priority ✅ COMPLETE
-- ✅ Blog System (Full Stack)
-- ✅ Events System (API Complete)
-
-### Phase 3 - Technical Improvements ✅ COMPLETE
-- ✅ Error Boundaries
-- ✅ Custom 404 Page
-- ✅ Friends UI Integration
-
-### Phase 4 - Remaining Features 🔄 IN PROGRESS
-- 🔄 Events UI Pages
-- 🔄 Blog Rich Text Editor
-- 📋 Groups/Communities System
-- 📋 Stories Feature
-- 📋 Performance Optimizations
-
-### Future Enhancements 📋 PLANNED
-- 📋 Map integration
-- 📋 Advanced analytics
-- 📋 Mobile app
-- 📋 Multi-language support
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [Next.js](https://nextjs.org/) - The React framework
-- [Turso](https://turso.tech/) - Edge SQLite database
-- [Drizzle ORM](https://orm.drizzle.team/) - Type-safe ORM
-- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
-- [Lucide](https://lucide.dev/) - Beautiful icons
-
-## 📞 Support
-
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/vonix-network/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/vonix-network/discussions)
-- **Discord**: [Join our Discord](https://discord.gg/your-invite)
+- **User Authentication**: Secure login and registration system with NextAuth.
+- **Player Profiles**: Detailed user profiles with stats, ranks, and activity.
+- **Server List**: Real-time server status and player counts.
+- **Forum**: Community discussion forums with categories, posts, and replies.
+- **Social Feed**: A Twitter-like social feed for user posts and interactions.
+- **Leaderboards**: Ranking of top players based on various metrics.
+- **Donations & Subscriptions**: Support the network through donations and rank subscriptions with Stripe and Square integration.
+- **Admin & Moderation Dashboards**: Powerful tools for staff to manage the community and application.
+- **Discord Integration**: Connects the web application with our Discord server.
 
 ---
 
-**Built with ❤️ for the Minecraft community**
+## 📚 Documentation
+
+This project is documented in the `/docs` directory. For a complete overview, please start with the following files:
+
+- **[Getting Started](./docs/01-getting-started.md)**: How to set up and run the project locally.
+- **[Project Structure](./docs/02-project-structure.md)**: An overview of the repository layout.
+- **[Features Guide](./docs/03-features.md)**: A detailed guide to all application features.
+- **[Deployment](./docs/04-deployment.md)**: Instructions for deploying the application to production.
+
+---
+
+## 🚀 Quick Start
+
+To get the application running locally, follow these steps:
+
+1.  **Clone the repository**:
+    ```bash
+    git clone <repository-url>
+    cd Vonix-Network-WWW
+    ```
+
+2.  **Install dependencies**:
+    ```bash
+    npm install
+    ```
+
+3.  **Set up environment variables**:
+    - Copy `.env.example` to `.env.local`.
+    - Fill in the required variables (database, auth secret, etc.).
+    ```bash
+    cp .env.example .env.local
+    ```
+
+4.  **Initialize the database**:
+    ```bash
+    npm run db:init
+    ```
+
+5.  **Run the development server**:
+    ```bash
+    npm run dev
+    ```
+
+6.  **Open your browser** to `http://localhost:3000`.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org/) (React)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with [shadcn/ui](https://ui.shadcn.com/)
+- **Authentication**: [NextAuth.js](https://next-auth.js.org/)
+- **Database**: [Turso](https://turso.tech/) (SQLite)
+- **ORM**: [Drizzle ORM](https://orm.drizzle.team/)
+- **Payments**: [Stripe](https://stripe.com/), [Square](https://developer.squareup.com/)
+- **Deployment**: [Vercel](https://vercel.com/)
+
+---
+
+## 🤝 Contributing
+
+Please refer to the `CONTRIBUTING.md` file for guidelines on how to contribute to this project.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.

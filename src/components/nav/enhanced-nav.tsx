@@ -47,19 +47,19 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [squareEnabled, setSquareEnabled] = useState(false);
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const isModerator = user?.role === 'admin' || user?.role === 'moderator' || user?.role === 'superadmin';
 
-  // Check Square status on mount
+  // Check payment system status on mount (Stripe or Square)
   useEffect(() => {
-    fetch('/api/square/status')
+    fetch('/api/payments/status')
       .then(res => res.json())
-      .then(data => setSquareEnabled(data.enabled))
-      .catch(() => setSquareEnabled(false));
+      .then(data => setPaymentsEnabled(data.enabled))
+      .catch(() => setPaymentsEnabled(false));
   }, []);
 
   // Public navigation structure
@@ -89,8 +89,8 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
       label: 'Donations',
       icon: Heart,
       dropdown: [
-        // Only show Subscribe if Square is enabled
-        ...(squareEnabled ? [{ href: '/donations/subscribe', label: 'Subscribe', icon: Crown }] : []),
+        // Only show Subscribe if payment system is enabled (Stripe or Square)
+        ...(paymentsEnabled ? [{ href: '/donations/subscribe', label: 'Subscribe', icon: Crown }] : []),
         { href: '/ranks', label: 'Donor Ranks', icon: Award },
       ]
     },
@@ -123,8 +123,8 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
       label: 'Donations',
       icon: Heart,
       dropdown: [
-        // Only show Subscribe if Square is enabled
-        ...(squareEnabled ? [{ href: '/donations/subscribe', label: 'Subscribe', icon: Crown }] : []),
+        // Only show Subscribe if payment system is enabled (Stripe or Square)
+        ...(paymentsEnabled ? [{ href: '/donations/subscribe', label: 'Subscribe', icon: Crown }] : []),
         { href: '/ranks', label: 'Donor Ranks', icon: Award },
       ]
     },

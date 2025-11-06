@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import '@/styles/square.css';
 import { CheckCircle2, Loader2 } from 'lucide-react';
+import { getPaymentErrorMessage } from '@/lib/payments/error-handler';
 
 declare global {
   interface Window {
@@ -188,17 +189,30 @@ export function SubscriptionPaymentForm({
               router.push('/dashboard');
             }, 2500);
           } else {
-            toast.error(subData.error || 'Failed to activate rank');
+            // Use error handler for subscription errors
+            const friendlyMessage = getPaymentErrorMessage(subData, 'square');
+            toast.error(friendlyMessage);
           }
         } else {
-          toast.error(data.error || 'Payment failed');
+          // Use error handler for payment errors
+          const friendlyMessage = getPaymentErrorMessage(data, 'square');
+          toast.error(friendlyMessage);
         }
       } else {
-        toast.error('Card validation failed. Please check your card details.');
+        // Handle tokenization errors
+        const tokenError = result.errors?.[0];
+        if (tokenError) {
+          const friendlyMessage = getPaymentErrorMessage(tokenError, 'square');
+          toast.error(friendlyMessage);
+        } else {
+          toast.error('Card validation failed. Please check your card details and try again.');
+        }
       }
     } catch (error: any) {
       console.error('Payment error:', error);
-      toast.error(error.message || 'Payment failed');
+      // Use error handler for unexpected errors
+      const friendlyMessage = getPaymentErrorMessage(error, 'square');
+      toast.error(friendlyMessage);
     } finally {
       setProcessing(false);
     }

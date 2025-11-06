@@ -6,15 +6,15 @@ import Link from 'next/link';
 import { DonationsPageClient } from '@/components/donations/donations-page-client';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { isSquareEnabled } from '@/lib/square/config';
+import { isPaymentEnabled } from '@/lib/payments/config';
 
 export const revalidate = 300; // Revalidate every 5 minutes
 
 export default async function DonationsPage() {
   // Note: Database migrations should be handled by your deployment process
 
-  // Check if Square is enabled
-  const squareEnabled = isSquareEnabled();
+  // Check if any payment system is enabled (Stripe or Square)
+  const paymentsEnabled = isPaymentEnabled();
 
   // Get donation settings
   let settingsData: Array<{ value: string | null }> = [];
@@ -84,8 +84,8 @@ export default async function DonationsPage() {
           </div>
         </section>
 
-        {/* Rank Subscription CTA - Only show if Square is enabled */}
-        {squareEnabled && (
+        {/* Rank Subscription CTA - Only show if payment system is enabled */}
+        {paymentsEnabled && (
           <section className="mb-16">
             <div className="glass border-2 border-cyan-500/30 rounded-2xl p-12 text-center hover-lift">
               <div className="inline-block mb-6 p-4 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-2xl">

@@ -29,27 +29,29 @@ export default function SubscribePage() {
   const [selectedDuration, setSelectedDuration] = useState<{ days: number; label: string; price: number; discount?: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [squareEnabled, setSquareEnabled] = useState(false);
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
+  const [paymentProvider, setPaymentProvider] = useState<string>('none');
 
   useEffect(() => {
-    checkSquareStatus();
+    checkPaymentStatus();
     fetchRanks();
   }, []);
 
-  async function checkSquareStatus() {
+  async function checkPaymentStatus() {
     try {
-      const response = await fetch('/api/square/status');
+      const response = await fetch('/api/payments/status');
       const data = await response.json();
-      setSquareEnabled(data.enabled);
+      setPaymentsEnabled(data.enabled);
+      setPaymentProvider(data.provider);
       
-      // Redirect to donations page if Square is not enabled
+      // Redirect to donations page if payment system is not enabled
       if (!data.enabled) {
         toast.error('Rank subscriptions are not available at this time');
         router.push('/donations');
       }
     } catch (error) {
-      console.error('Failed to check Square status:', error);
-      // Redirect on error as well (assume Square is not configured)
+      console.error('Failed to check payment status:', error);
+      // Redirect on error as well (assume payment system is not configured)
       toast.error('Unable to load subscription system');
       router.push('/donations');
     }
@@ -158,8 +160,8 @@ export default function SubscribePage() {
         </p>
       </div>
 
-      {/* Square Not Configured Warning */}
-      {!squareEnabled && !loading && (
+      {/* Payment System Not Configured Warning */}
+      {!paymentsEnabled && !loading && (
         <Card className="mb-8 border-yellow-500/50 bg-yellow-500/10">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
@@ -171,16 +173,15 @@ export default function SubscribePage() {
                   Payment Processing Not Configured
                 </h3>
                 <p className="text-gray-300 mb-4">
-                  The rank subscription system is ready, but Square payment processing needs to be configured.
-                  You can browse ranks and pricing, but purchases require Square to be enabled.
+                  The rank subscription system is ready, but payment processing needs to be configured.
+                  You can browse ranks and pricing, but purchases require a payment provider (Stripe or Square) to be enabled.
                 </p>
                 <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-                  <p className="text-sm text-gray-400 mb-2">Administrator: Add to .env file:</p>
+                  <p className="text-sm text-gray-400 mb-2">Administrator: Configure a payment provider in .env:</p>
                   <code className="text-sm text-cyan-400 block">
-                    SQUARE_INTEGRATION_ENABLED=true<br />
-                    SQUARE_ACCESS_TOKEN=your-token<br />
-                    SQUARE_LOCATION_ID=your-location<br />
-                    SQUARE_APPLICATION_ID=your-app-id
+                    PAYMENT_PROVIDER=stripe  # or 'square'<br />
+                    # Then add provider-specific credentials<br />
+                    # See PAYMENT_SYSTEM_SETUP.md for details
                   </code>
                 </div>
               </div>
@@ -363,11 +364,11 @@ export default function SubscribePage() {
 
                   <Button
                     onClick={handlePurchase}
-                    disabled={processing || !squareEnabled}
+                    disabled={processing || !paymentsEnabled}
                     className="w-full"
                     size="lg"
                   >
-                    {!squareEnabled ? (
+                    {!paymentsEnabled ? (
                       <>Payment Processing Not Available</>
                     ) : (
                       <>
@@ -430,7 +431,7 @@ export default function SubscribePage() {
               </div>
 
               <p className="text-sm text-gray-400 mb-6 text-center">
-                Payment will be processed securely through Square. Your rank will activate immediately after purchase.
+                Payment will be processed securely through {paymentProvider === 'stripe' ? 'Stripe' : 'Square'}. Your rank will activate immediately after purchase.
               </p>
 
               <SubscriptionPaymentForm
