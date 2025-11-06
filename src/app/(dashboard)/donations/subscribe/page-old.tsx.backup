@@ -1,0 +1,702 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Crown, Check, CreditCard, Calendar, TrendingUp, Sparkles, ArrowUpDown } from 'lucide-react';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { SubscriptionPaymentForm } from '@/components/donations/subscription-payment-form';
+
+interface DonationRank {
+  id: string;
+  name: string;
+  badge: string;
+  description: string;
+  features: string[];
+  textColor: string;
+  backgroundColor: string;
+  borderColor: string;
+  minDonation: number;
+  priority: number;
+}
+
+export default function SubscribePage() {
+  const router = useRouter();
+  const [ranks, setRanks] = useState<DonationRank[]>([]);
+  const [selectedRank, setSelectedRank] = useState<DonationRank | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<{ days: number; label: string; price: number; discount?: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
+  const [paymentProvider, setPaymentProvider] = useState<string>('none');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [currentRankStatus, setCurrentRankStatus] = useState<any>(null);
+
+  useEffect(() => {
+    checkPaymentStatus();
+    fetchRanks();
+    fetchCurrentRankStatus();
+  }, []);
+
+  async function checkPaymentStatus() {
+    try {
+      const response = await fetch('/api/payments/status');
+      const data = await response.json();
+      setPaymentsEnabled(data.enabled);
+      setPaymentProvider(data.provider);
+      
+      // Redirect to donations page if payment system is not enabled
+      if (!data.enabled) {
+        toast.error('Rank subscriptions are not available at this time');
+        router.push('/donations');
+      }
+    } catch (error) {
+      console.error('Failed to check payment status:', error);
+      // Redirect on error as well (assume payment system is not configured)
+      toast.error('Unable to load subscription system');
+      router.push('/donations');
+    }
+  }
+
+  async function fetchRanks() {
+    try {
+      const response = await fetch('/api/donor-ranks');
+      const data = await response.json();
+      
+      if (data.ranks) {
+        // Sort by minDonation (lower = first)
+        const sortedRanks = data.ranks.sort((a: DonationRank, b: DonationRank) => a.minDonation - b.minDonation);
+        setRanks(sortedRanks);
+        
+        // Auto-select first rank
+        if (sortedRanks.length > 0) {
+          setSelectedRank(sortedRanks[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch ranks:', error);
+      toast.error('Failed to load subscription plans');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchCurrentRankStatus() {
+    try {
+      const response = await fetch('/api/user/rank-status');
+      const data = await response.json();
+      setCurrentRankStatus(data);
+      
+      // If user has active rank, redirect to extend page
+      if (data.hasActiveRank) {
+        toast.info('You already have an active rank. Redirecting to extend page...');
+        setTimeout(() => {
+          router.push('/donations/extend');
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Failed to fetch current rank status:', error);
+    }
+  }
+
+  // Calculate duration packages based on actual rank pricing
+  function getRankDurationPackages(rank: DonationRank) {
+    const monthlyPrice = rank.minDonation; // minDonation is the monthly price
+    
+    return [
+      {
+        days: 30,
+        label: '1 Month',
+        price: monthlyPrice,
+      },
+      {
+        days: 90,
+        label: '3 Months',
+        price: Math.round(monthlyPrice * 3 * 0.95 * 100) / 100, // 5% discount
+        discount: 5,
+      },
+      {
+        days: 180,
+        label: '6 Months',
+        price: Math.round(monthlyPrice * 6 * 0.90 * 100) / 100, // 10% discount
+        discount: 10,
+      },
+      {
+        days: 365,
+        label: '12 Months',
+        price: Math.round(monthlyPrice * 12 * 0.85 * 100) / 100, // 15% discount
+        discount: 15,
+      },
+    ];
+  }
+
+  // Calculate rank value info from actual price
+  function getRankInfo(rank: DonationRank) {
+    return {
+      pricePerDay: Math.round((rank.minDonation / 30) * 100) / 100,
+      pricePerMonth: rank.minDonation,
+      pricePerYear: Math.round(rank.minDonation * 12 * 0.85 * 100) / 100,
+    };
+  }
+
+  // Calculate what happens when upgrading/extending
+  function getUpgradeInfo() {
+    if (!currentRankStatus?.hasActiveRank || !selectedRank || !selectedDuration) {
+      return null;
+    }
+
+    const currentRank = currentRankStatus.currentRank;
+    const remainingDays = currentRankStatus.remainingDays;
+    const remainingValue = currentRankStatus.remainingValue;
+
+    const isUpgrade = selectedRank.minDonation > currentRank.minDonation;
+    const isExtend = selectedRank.id === currentRank.id;
+    const isDowngrade = selectedRank.minDonation < currentRank.minDonation;
+
+    if (isExtend) {
+      // Simple extension - just add days
+      return {
+        type: 'extend',
+        message: `Your ${currentRank.name} rank will be extended`,
+        totalDays: remainingDays + selectedDuration.days,
+        bonusDays: 0,
+      };
+    } else if (isUpgrade) {
+      // Upgrade - convert remaining value to days at new rank price
+      const newPricePerDay = selectedRank.minDonation / 30;
+      const convertedDays = Math.floor(remainingValue / newPricePerDay);
+      const totalDays = selectedDuration.days + convertedDays;
+
+      return {
+        type: 'upgrade',
+        message: `Upgrading from ${currentRank.name} to ${selectedRank.name}`,
+        totalDays,
+        bonusDays: convertedDays,
+        oldRank: currentRank.name,
+        newRank: selectedRank.name,
+      };
+    } else {
+      // Downgrade - convert remaining value to MORE days at lower price
+      const newPricePerDay = selectedRank.minDonation / 30;
+      const convertedDays = Math.floor(remainingValue / newPricePerDay);
+      const totalDays = selectedDuration.days + convertedDays;
+
+      return {
+        type: 'downgrade',
+        message: `Changing from ${currentRank.name} to ${selectedRank.name}`,
+        totalDays,
+        bonusDays: convertedDays,
+        oldRank: currentRank.name,
+        newRank: selectedRank.name,
+      };
+    }
+  }
+
+  function handlePurchase() {
+    if (!selectedRank || !selectedDuration) {
+      toast.error('Please select a rank and duration');
+      return;
+    }
+
+    // Scroll to payment section
+    setProcessing(true);
+    const paymentSection = document.getElementById('payment-section');
+    if (paymentSection) {
+      paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  const durationPackages = selectedRank ? getRankDurationPackages(selectedRank) : [];
+  const rankInfo = selectedRank ? getRankInfo(selectedRank) : null;
+  const upgradeInfo = getUpgradeInfo();
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold text-white mb-4 flex items-center justify-center gap-3">
+          <Crown className="h-10 w-10 text-yellow-400" />
+          Rank Subscriptions
+        </h1>
+        <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+          Choose your rank and duration. Upgrade anytime and your remaining time converts automatically!
+        </p>
+      </div>
+
+      {/* Current Rank Status */}
+      {currentRankStatus?.hasActiveRank && (
+        <Card className="mb-8 border-cyan-500/30 bg-cyan-500/5">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4 flex-1">
+                <div className="bg-cyan-500/20 p-3 rounded-lg">
+                  <Crown className="h-6 w-6 text-cyan-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    Your Current Rank
+                  </h3>
+                  <div className="flex items-center gap-3 mb-3">
+                    <span 
+                      className="text-2xl font-bold"
+                      style={{ color: currentRankStatus.currentRank.textColor }}
+                    >
+                      {currentRankStatus.currentRank.badge || currentRankStatus.currentRank.name}
+                    </span>
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                      Active
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-400">Remaining Time</p>
+                      <p className="text-white font-semibold">
+                        {currentRankStatus.remainingDays} days
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">Remaining Value</p>
+                      <p className="text-white font-semibold">
+                        ${currentRankStatus.remainingValue.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-400 mt-3">
+                    Expires on {new Date(currentRankStatus.expiresAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => router.push('/donations/manage-rank')}
+                variant="outline"
+                className="border-cyan-500/30 hover:bg-cyan-500/10 shrink-0"
+              >
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                Switch Rank (Free)
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Upgrade/Extend Info */}
+      {upgradeInfo && (
+        <Card className={`mb-8 ${
+          upgradeInfo.type === 'upgrade' ? 'border-green-500/30 bg-green-500/5' :
+          upgradeInfo.type === 'extend' ? 'border-cyan-500/30 bg-cyan-500/5' :
+          'border-blue-500/30 bg-blue-500/5'
+        }`}>
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className={`p-3 rounded-lg ${
+                upgradeInfo.type === 'upgrade' ? 'bg-green-500/20' :
+                upgradeInfo.type === 'extend' ? 'bg-cyan-500/20' :
+                'bg-blue-500/20'
+              }`}>
+                <TrendingUp className={`h-6 w-6 ${
+                  upgradeInfo.type === 'upgrade' ? 'text-green-400' :
+                  upgradeInfo.type === 'extend' ? 'text-cyan-400' :
+                  'text-blue-400'
+                }`} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  {upgradeInfo.message}
+                </h3>
+                
+                {upgradeInfo.type === 'upgrade' && (
+                  <div className="space-y-2">
+                    <p className="text-gray-300">
+                      Your remaining ${currentRankStatus.remainingValue.toFixed(2)} ({currentRankStatus.remainingDays} days) will convert to{' '}
+                      <span className="text-green-400 font-semibold">{upgradeInfo.bonusDays} bonus days</span> at the new rank price.
+                    </p>
+                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                      <p className="text-sm text-gray-400">You'll receive:</p>
+                      <p className="text-white font-semibold">
+                        {selectedDuration?.days} days (purchased) + {upgradeInfo.bonusDays} days (converted) ={' '}
+                        <span className="text-green-400">{upgradeInfo.totalDays} total days</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {upgradeInfo.type === 'extend' && (
+                  <div className="space-y-2">
+                    <p className="text-gray-300">
+                      Your current {currentRankStatus.remainingDays} days will be extended by {selectedDuration?.days} days.
+                    </p>
+                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                      <p className="text-sm text-gray-400">Total duration:</p>
+                      <p className="text-white font-semibold">
+                        <span className="text-cyan-400">{upgradeInfo.totalDays} days</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {upgradeInfo.type === 'downgrade' && (
+                  <div className="space-y-2">
+                    <p className="text-gray-300">
+                      Your remaining ${currentRankStatus.remainingValue.toFixed(2)} ({currentRankStatus.remainingDays} days) will convert to{' '}
+                      <span className="text-blue-400 font-semibold">{upgradeInfo.bonusDays} bonus days</span> at the lower rank price.
+                    </p>
+                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                      <p className="text-sm text-gray-400">You'll receive:</p>
+                      <p className="text-white font-semibold">
+                        {selectedDuration?.days} days (purchased) + {upgradeInfo.bonusDays} days (converted) ={' '}
+                        <span className="text-blue-400">{upgradeInfo.totalDays} total days</span>
+                      </p>
+                    </div>
+                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mt-2">
+                      <p className="text-sm text-blue-400">
+                        💡 You'll get more days because the {selectedRank?.name} rank costs less per day!
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Payment System Not Configured Warning */}
+      {!paymentsEnabled && !loading && (
+        <Card className="mb-8 border-yellow-500/50 bg-yellow-500/10">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="bg-yellow-500/20 p-3 rounded-lg">
+                <CreditCard className="h-6 w-6 text-yellow-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Payment Processing Not Configured
+                </h3>
+                <p className="text-gray-300 mb-4">
+                  The rank subscription system is ready, but payment processing needs to be configured.
+                  You can browse ranks and pricing, but purchases require a payment provider (Stripe or Square) to be enabled.
+                </p>
+                <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                  <p className="text-sm text-gray-400 mb-2">Administrator: Configure a payment provider in .env:</p>
+                  <code className="text-sm text-cyan-400 block">
+                    PAYMENT_PROVIDER=stripe  # or 'square'<br />
+                    # Then add provider-specific credentials<br />
+                    # See PAYMENT_SYSTEM_SETUP.md for details
+                  </code>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Rank Selection */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-cyan-400" />
+                Select Your Rank
+              </CardTitle>
+              <CardDescription>
+                Each rank unlocks exclusive features and perks
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {ranks.map((rank) => {
+                  const isSelected = selectedRank?.id === rank.id;
+                  const info = getRankInfo(rank);
+                  
+                  return (
+                    <button
+                      key={rank.id}
+                      onClick={() => setSelectedRank(rank)}
+                      className={`text-left p-6 rounded-lg border-2 transition-all duration-200 ${
+                        isSelected
+                          ? 'border-cyan-400 bg-cyan-500/10 scale-105'
+                          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div 
+                            className="text-2xl font-bold mb-1"
+                            style={{ color: rank.textColor }}
+                          >
+                            {rank.badge || rank.name}
+                          </div>
+                          <div className="text-sm text-gray-400">
+                            ${info.pricePerMonth}/month
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <div className="bg-cyan-400 text-slate-900 rounded-full p-1">
+                            <Check className="h-4 w-4" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-gray-300 mb-4">
+                        {rank.description}
+                      </p>
+                      
+                      <div className="space-y-2">
+                        {rank.features.slice(0, 3).map((feature, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-sm text-gray-400">
+                            <Check className="h-4 w-4 text-green-400 flex-shrink-0" />
+                            <span>{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Duration Selection */}
+          {selectedRank && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-cyan-400" />
+                  Choose Duration
+                </CardTitle>
+                <CardDescription>
+                  Longer durations include discounts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {durationPackages.map((pkg) => {
+                    const isSelected = selectedDuration?.days === pkg.days;
+                    
+                    return (
+                      <button
+                        key={pkg.days}
+                        onClick={() => setSelectedDuration(pkg)}
+                        className={`relative p-6 rounded-lg border-2 transition-all duration-200 ${
+                          isSelected
+                            ? 'border-cyan-400 bg-cyan-500/10 scale-105'
+                            : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                        }`}
+                      >
+                        {pkg.discount && (
+                          <Badge className="absolute top-2 right-2 bg-green-500">
+                            Save {pkg.discount}%
+                          </Badge>
+                        )}
+                        
+                        <div className="text-2xl font-bold text-white mb-2">
+                          {pkg.label}
+                        </div>
+                        
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <span className="text-3xl font-bold text-cyan-400">
+                            ${pkg.price}
+                          </span>
+                          <span className="text-sm text-gray-400">
+                            / {pkg.days} days
+                          </span>
+                        </div>
+                        
+                        <div className="text-sm text-gray-400">
+                          ${(pkg.price / pkg.days).toFixed(2)}/day
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Order Summary */}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-24">
+            <CardHeader>
+              <CardTitle>Order Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {selectedRank && selectedDuration ? (
+                <>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="text-sm text-gray-400 mb-1">Selected Rank</div>
+                      <div 
+                        className="text-xl font-bold"
+                        style={{ color: selectedRank.textColor }}
+                      >
+                        {selectedRank.badge || selectedRank.name}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm text-gray-400 mb-1">Duration</div>
+                      <div className="text-lg font-semibold text-white">
+                        {selectedDuration.label}
+                        {selectedDuration.discount && (
+                          <Badge className="ml-2 bg-green-500">
+                            -{selectedDuration.discount}%
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="border-t border-slate-700 pt-4">
+                      <div className="flex items-baseline justify-between mb-2">
+                        <span className="text-gray-400">Subtotal</span>
+                        <span className="text-white">${selectedDuration.price}</span>
+                      </div>
+                      
+                      <div className="flex items-baseline justify-between text-lg font-bold">
+                        <span className="text-white">Total</span>
+                        <span className="text-cyan-400 text-2xl">
+                          ${selectedDuration.price}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recurring Subscription Toggle */}
+                  <div className="bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/30 rounded-lg p-4 mb-4">
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <div className="flex items-center h-5 mt-0.5">
+                        <input
+                          type="checkbox"
+                          checked={isRecurring}
+                          onChange={(e) => setIsRecurring(e.target.checked)}
+                          className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-slate-900 cursor-pointer"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-white group-hover:text-cyan-400 transition-colors">
+                            Make this recurring
+                          </span>
+                          <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
+                            Auto-Renew
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-400">
+                          {isRecurring ? (
+                            <>
+                              Your rank will automatically renew every <span className="text-white font-medium">{selectedDuration.label.toLowerCase()}</span> for <span className="text-cyan-400 font-medium">${selectedDuration.price}</span>. Cancel anytime from settings.
+                            </>
+                          ) : (
+                            <>
+                              Subscribe and your rank will automatically renew. You can cancel anytime without losing your current benefits.
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  <Button
+                    onClick={handlePurchase}
+                    disabled={processing || !paymentsEnabled}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {!paymentsEnabled ? (
+                      <>Payment Processing Not Available</>
+                    ) : (
+                      <>
+                        <CreditCard className="h-5 w-5 mr-2" />
+                        {processing ? 'Proceed to Checkout ↓' : (isRecurring ? 'Start Subscription' : 'Continue to Payment')}
+                      </>
+                    )}
+                  </Button>
+
+                  <div className="space-y-2 text-sm text-gray-400">
+                    <div className="flex items-start gap-2">
+                      <TrendingUp className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span>Upgrade anytime - your remaining days convert automatically</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Crown className="h-4 w-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                      <span>Rank activates immediately after payment</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center text-gray-400 py-8">
+                  Select a rank and duration to continue
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Payment Section - Shows when user clicks Continue to Payment */}
+      {processing && selectedRank && selectedDuration && (
+        <div id="payment-section" className="container mx-auto px-4 pb-16">
+          <Card className="max-w-2xl mx-auto border-cyan-500/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-6 w-6 text-cyan-400" />
+                Complete Your Purchase
+              </CardTitle>
+              <CardDescription>
+                {selectedRank.badge || selectedRank.name} - {selectedDuration.label} for ${selectedDuration.price}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-slate-800/50 p-4 rounded-lg mb-6">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-400">Selected Rank:</span>
+                  <span className="font-semibold" style={{ color: selectedRank.textColor }}>
+                    {selectedRank.badge || selectedRank.name}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm mt-2">
+                  <span className="text-gray-400">Duration:</span>
+                  <span className="font-semibold text-white">{selectedDuration.label}</span>
+                </div>
+                <div className="flex justify-between items-center text-lg mt-3 pt-3 border-t border-slate-700">
+                  <span className="text-white font-bold">Total:</span>
+                  <span className="text-cyan-400 font-bold text-2xl">${selectedDuration.price}</span>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-400 mb-6 text-center">
+                Payment will be processed securely through {paymentProvider === 'stripe' ? 'Stripe' : 'Square'}. Your rank will activate immediately after purchase.
+              </p>
+
+              <SubscriptionPaymentForm
+                rankId={selectedRank.id}
+                rankName={selectedRank.name}
+                days={selectedDuration.days}
+                price={selectedDuration.price}
+                durationLabel={selectedDuration.label}
+                isRecurring={isRecurring}
+                onSuccess={() => {
+                  // Success is handled in the component
+                }}
+                onCancel={() => setProcessing(false)}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}

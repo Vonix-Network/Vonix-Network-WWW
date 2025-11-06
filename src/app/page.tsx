@@ -16,8 +16,10 @@ import {
   ArrowRight,
   Check,
 } from 'lucide-react';
+import { DiscordButtonClient } from '@/components/home/discord-button-client';
 import { Card, CardContent } from '@/components/ui/enterprise-card';
 import { Button } from '@/components/ui/enterprise-button';
+import dynamic from 'next/dynamic';
 import { LiveServerStatus, LiveServerStatusSkeleton } from '@/components/home/live-server-status';
 import { db } from '@/db';
 import { servers } from '@/db/schema';
@@ -61,13 +63,6 @@ const features = [
     description: 'Safe and welcoming environment for all players',
     color: 'text-info',
   },
-];
-
-const stats = [
-  { value: '10K+', label: 'Active Players' },
-  { value: '500+', label: 'Daily Events' },
-  { value: '24/7', label: 'Server Uptime' },
-  { value: '99.9%', label: 'Satisfaction' },
 ];
 
 const perks = [
@@ -122,25 +117,14 @@ export default async function HomePage() {
               </Link>
             </Button>
             
+            {/* Discord Button */}
+            <DiscordButtonClient />
+            
             <Button size="lg" variant="outline" asChild>
               <Link href="/servers">
                 View Servers
               </Link>
             </Button>
-          </div>
-          
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-12 max-w-4xl mx-auto">
-            {stats.map((stat, index) => (
-              <div 
-                key={index} 
-                className="space-y-2 animate-slide-in-up"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <p className="text-4xl font-bold gradient-text">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import { assignRankSubscription } from '@/lib/rank-subscription';
+import { assignRankSubscription, upgradeRank } from '@/lib/rank-subscription';
 import { db } from '@/db';
-import { users, donations } from '@/db/schema';
+import { users, donations, donationRanks } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
@@ -38,8 +38,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Assign rank subscription
-    const result = await assignRankSubscription(userId, rankId, days);
+    // Check if user has existing rank
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    let result: { success: boolean; expiresAt?: Date; error?: string };
+    const now = new Date();
+    const hasActiveRank = user.donationRankId && user.rankExpiresAt && new Date(user.rankExpiresAt) > now;
+
+    if (hasActiveRank && user.donationRankId && user.donationRankId !== rankId) {
+      // User has different rank - need to upgrade/downgrade
+      const [currentRank] = await db
+        .select()
+        .from(donationRanks)
+        .where(eq(donationRanks.id, user.donationRankId))
+        .limit(1);
+
+      const [newRank] = await db
+        .select()
+        .from(donationRanks)
+        .where(eq(donationRanks.id, rankId))
+        .limit(1);
+
+      if (!currentRank || !newRank) {
+        return NextResponse.json(
+          { error: 'Rank not found' },
+          { status: 404 }
+        );
+      }
+
+      // Upgrade/downgrade to new rank (converts remaining days)
+      result = await upgradeRank(userId, rankId);
+      
+      if (!result.success) {
+        return NextResponse.json(
+          { error: result.error || 'Failed to upgrade rank' },
+          { status: 500 }
+        );
+      }
+
+      // Now add the purchased days on top of converted days
+      result = await assignRankSubscription(userId, rankId, days);
+    } else {
+      // Same rank or no active rank - simple extension
+      result = await assignRankSubscription(userId, rankId, days);
+    }
 
     if (!result.success) {
       return NextResponse.json(

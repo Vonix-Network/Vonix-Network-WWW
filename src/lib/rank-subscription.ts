@@ -7,7 +7,7 @@
 
 import { db } from '@/db';
 import { users, donationRanks } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, lt, and, isNotNull } from 'drizzle-orm';
 import { convertRankDays } from './rank-pricing';
 
 // Re-export pricing functions from client-safe module
@@ -155,20 +155,30 @@ export async function downgradeRank(
  * Check and remove expired ranks
  * Should be run as a cron job every hour
  */
-export async function removeExpiredRanks(): Promise<{ removed: number }> {
+export async function removeExpiredRanks(): Promise<{ removed: number; users: string[] }> {
   try {
     const now = new Date();
+    const removedUsernames: string[] = [];
     
-    // Find all users with expired ranks
+    // Find all users with expired ranks (rankExpiresAt < now)
     const expiredUsers = await db
       .select({
         id: users.id,
         username: users.username,
         donationRankId: users.donationRankId,
+        rankExpiresAt: users.rankExpiresAt,
       })
       .from(users)
-      .where(eq(users.rankExpiresAt, now)) // This needs proper comparison in Drizzle
+      .where(
+        and(
+          isNotNull(users.donationRankId),
+          isNotNull(users.rankExpiresAt),
+          lt(users.rankExpiresAt, now)
+        )
+      )
       .limit(100);
+
+    console.log(`🔍 Found ${expiredUsers.length} users with expired ranks`);
 
     // Remove expired ranks
     for (const user of expiredUsers) {
@@ -181,13 +191,14 @@ export async function removeExpiredRanks(): Promise<{ removed: number }> {
         })
         .where(eq(users.id, user.id));
       
-      console.log(`⏰ Removed expired rank from user ${user.username}`);
+      removedUsernames.push(user.username);
+      console.log(`⏰ Removed expired rank from user ${user.username} (expired: ${user.rankExpiresAt})`);
     }
 
-    return { removed: expiredUsers.length };
+    return { removed: expiredUsers.length, users: removedUsernames };
   } catch (error) {
     console.error('Error removing expired ranks:', error);
-    return { removed: 0 };
+    return { removed: 0, users: [] };
   }
 }
 

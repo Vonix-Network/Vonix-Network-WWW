@@ -22,6 +22,27 @@
       "when": 1761971753198,
       "tag": "0002_little_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1762405831311,
+      "tag": "0003_elite_mandroid",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1762412159410,
+      "tag": "0004_lying_cardiac",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1762413805748,
+      "tag": "0005_glamorous_proteus",
+      "breakpoints": true
     }
   ]
 }

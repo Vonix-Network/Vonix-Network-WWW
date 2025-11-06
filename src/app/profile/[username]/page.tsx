@@ -141,8 +141,22 @@ export default function ProfilePage() {
       if (data.user.donationRankId) {
         const rankResponse = await fetch(`/api/donor-ranks`);
         if (rankResponse.ok) {
-          const ranks = await rankResponse.json();
-          const rank = ranks.find((r: DonationRank) => r.id === data.user.donationRankId);
+          const ranksJson = await rankResponse.json();
+          // Normalize response to an array shape
+          let ranksArr: DonationRank[] = [];
+          if (Array.isArray(ranksJson)) {
+            ranksArr = ranksJson as DonationRank[];
+          } else if (Array.isArray(ranksJson?.ranks)) {
+            ranksArr = ranksJson.ranks as DonationRank[];
+          } else if (ranksJson && typeof ranksJson === 'object') {
+            try {
+              ranksArr = Object.values(ranksJson) as DonationRank[];
+            } catch {
+              ranksArr = [];
+            }
+          }
+
+          const rank = ranksArr.find((r: DonationRank) => r.id === data.user.donationRankId);
           if (rank) setUserRank(rank);
         }
       }

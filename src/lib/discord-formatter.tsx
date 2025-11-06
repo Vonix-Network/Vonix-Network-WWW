@@ -13,6 +13,45 @@ interface DiscordEmoji {
 }
 
 /**
+ * Minimal shortcode -> Unicode emoji map for Discord-style aliases
+ * Extend as needed; unknown shortcodes are left unchanged
+ */
+const SHORTCODE_EMOJI_MAP: Record<string, string> = {
+  skull: '💀',
+  warning: '⚠️',
+  exclamation: '❗',
+  question: '❓',
+  star: '⭐',
+  sparkles: '✨',
+  heart: '❤️',
+  green_heart: '💚',
+  blue_heart: '💙',
+  purple_heart: '💜',
+  yellow_heart: '💛',
+  white_check_mark: '✅',
+  x: '❌',
+  hammer_and_pick: '⚒️',
+  pick: '⛏️',
+  cross_swords: '⚔️',
+  fire: '🔥',
+  snowflake: '❄️',
+};
+
+/**
+ * Replace :shortcode: with Unicode emojis while preserving custom emojis (<:name:id>)
+ */
+function replaceEmojiShortcodes(text: string): string {
+  if (!text) return text;
+  // Skip if looks like custom emoji already handled elsewhere
+  // Replace generic :name: patterns that are not part of <a?:name:id>
+  return text.replace(/(^|[^<]):([a-zA-Z0-9_+\-]+):/g, (match, prefix, name) => {
+    const lower = String(name).toLowerCase();
+    const emoji = SHORTCODE_EMOJI_MAP[lower];
+    return emoji ? `${prefix}${emoji}` : match; // leave unknown shortcodes intact
+  });
+}
+
+/**
  * Parse Discord custom emoji syntax: <:name:id> or <a:name:id>
  */
 function parseCustomEmoji(text: string): (string | React.ReactElement)[] {
@@ -59,8 +98,9 @@ function parseCustomEmoji(text: string): (string | React.ReactElement)[] {
 export function parseDiscordMarkdown(text: string): React.ReactElement {
   if (!text) return <></>;
 
-  // First, handle custom emojis
-  const emojiParts = parseCustomEmoji(text);
+  // First, handle custom emojis and shortcode emojis
+  const withShortcodes = replaceEmojiShortcodes(text);
+  const emojiParts = parseCustomEmoji(withShortcodes);
   
   // Process each part for markdown
   const processedParts = emojiParts.map((part, partIndex) => {
@@ -75,6 +115,18 @@ export function parseDiscordMarkdown(text: string): React.ReactElement {
 
     // Process markdown in order of precedence
     const patterns = [
+      // Blockquotes > text (single-line)
+      {
+        regex: /(^|\n)>\s?(.+?)(?=\n|$)/g,
+        render: (content: string, key: number) => (
+          <div
+            key={`quote-${partIndex}-${key}`}
+            className="my-2 pl-4 border-l-4 border-brand-cyan/30 text-gray-300"
+          >
+            {parseDiscordMarkdown(content)}
+          </div>
+        ),
+      },
       // Spoilers ||text||
       {
         regex: /\|\|(.+?)\|\|/g,
@@ -84,16 +136,25 @@ export function parseDiscordMarkdown(text: string): React.ReactElement {
             className="bg-gray-800 hover:bg-transparent transition-colors cursor-pointer px-1 rounded"
             title="Spoiler (hover to reveal)"
           >
-            {content}
+            {parseDiscordMarkdown(content)}
           </span>
         ),
       },
-      // Bold **text** or __text__
+      // Underline __text__
       {
-        regex: /\*\*(.+?)\*\*|__(.+?)__/g,
+        regex: /__([^_]+?)__/g,
+        render: (content: string, key: number) => (
+          <span key={`underline-${partIndex}-${key}`} className="underline underline-offset-2">
+            {parseDiscordMarkdown(content)}
+          </span>
+        ),
+      },
+      // Bold **text**
+      {
+        regex: /\*\*(.+?)\*\*/g,
         render: (content: string, key: number) => (
           <strong key={`bold-${partIndex}-${key}`} className="font-bold text-white">
-            {content}
+            {parseDiscordMarkdown(content)}
           </strong>
         ),
       },
@@ -102,7 +163,7 @@ export function parseDiscordMarkdown(text: string): React.ReactElement {
         regex: /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)|(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g,
         render: (content: string, key: number) => (
           <em key={`italic-${partIndex}-${key}`} className="italic">
-            {content}
+            {parseDiscordMarkdown(content)}
           </em>
         ),
       },
@@ -111,7 +172,7 @@ export function parseDiscordMarkdown(text: string): React.ReactElement {
         regex: /~~(.+?)~~/g,
         render: (content: string, key: number) => (
           <span key={`strike-${partIndex}-${key}`} className="line-through opacity-75">
-            {content}
+            {parseDiscordMarkdown(content)}
           </span>
         ),
       },
@@ -125,6 +186,21 @@ export function parseDiscordMarkdown(text: string): React.ReactElement {
           >
             {content}
           </code>
+        ),
+      },
+      // URLs
+      {
+        regex: /(https?:\/\/[\w.-]+(?:\/[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?)/g,
+        render: (content: string, key: number) => (
+          <a
+            key={`link-${partIndex}-${key}`}
+            href={content}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-cyan hover:text-brand-blue underline-offset-2 hover:underline break-words"
+          >
+            {content}
+          </a>
         ),
       },
     ];
@@ -178,7 +254,16 @@ export function parseDiscordMarkdown(text: string): React.ReactElement {
   return (
     <span className="discord-formatted">
       {flattenedParts.map((part, index) => (
-        <React.Fragment key={`part-${index}`}>{part}</React.Fragment>
+        <React.Fragment key={`part-${index}`}>
+          {typeof part === 'string'
+            ? part.split('\n').map((line, i) => (
+                <React.Fragment key={`line-${index}-${i}`}>
+                  {i > 0 && <br />}
+                  {convertUnicodeEmojis(line)}
+                </React.Fragment>
+              ))
+            : part}
+        </React.Fragment>
       ))}
     </span>
   );
@@ -188,7 +273,6 @@ export function parseDiscordMarkdown(text: string): React.ReactElement {
  * Convert Unicode emojis to Twemoji images for consistent display
  */
 export function convertUnicodeEmojis(text: string): React.ReactElement {
-  // This is a simplified version - you can enhance with a full emoji library
   const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
   const parts: (string | React.ReactElement)[] = [];
   let lastIndex = 0;
@@ -200,13 +284,22 @@ export function convertUnicodeEmojis(text: string): React.ReactElement {
     }
 
     const emoji = match[0];
-    const codePoint = emoji.codePointAt(0)?.toString(16).padStart(4, '0');
+    // Convert emoji to codepoint(s) for Twemoji
+    const codePoints = Array.from(emoji)
+      .map(char => char.codePointAt(0)?.toString(16))
+      .filter(Boolean)
+      .join('-');
     
-    if (codePoint) {
+    if (codePoints) {
       parts.push(
-        <span key={`emoji-${match.index}`} className="inline-block" title={emoji}>
-          {emoji}
-        </span>
+        <img
+          key={`emoji-${match.index}`}
+          src={`https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/${codePoints}.svg`}
+          alt={emoji}
+          title={emoji}
+          className="inline-block w-5 h-5 align-middle mx-0.5"
+          loading="lazy"
+        />
       );
     }
 
@@ -225,6 +318,9 @@ export function convertUnicodeEmojis(text: string): React.ReactElement {
  */
 export function formatDiscordMessage(content: string): React.ReactElement {
   if (!content) return <></>;
+
+  // First, replace emoji shortcodes with Unicode emojis
+  content = replaceEmojiShortcodes(content);
 
   // Handle code blocks first (```language\ncode```)
   const codeBlockRegex = /```(\w+)?\n?([\s\S]+?)```/g;

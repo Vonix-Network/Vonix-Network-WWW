@@ -57,7 +57,7 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
       const response = await fetch('/api/admin/settings/discord');
       if (response.ok) {
         const data = await response.json();
-        setDiscordUrl(data.inviteUrl || 'https://discord.gg/C7xmVgQnK5');
+        setDiscordUrl(data.inviteUrl || 'https://discord.gg/2zHpmcssFZ');
       }
     } catch (error) {
       // Use default if fetch fails
@@ -144,42 +144,50 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
   };
 
   return (
-    <div className="flex flex-col w-full mx-auto h-[600px] glass border border-brand-cyan/20 rounded-2xl overflow-hidden shadow-2xl shadow-brand-cyan/10 hover:border-brand-cyan/30 transition-all">
+    <div className="flex flex-col w-full mx-auto h-[600px] glass border-2 border-brand-cyan/30 rounded-2xl overflow-hidden shadow-2xl shadow-brand-cyan/20 hover:border-brand-cyan/40 hover:shadow-brand-cyan/30 transition-all duration-300">
       {/* Chat Header */}
-      <div className="px-6 py-4 glass border-b border-brand-cyan/20 bg-gradient-to-r from-brand-cyan/5 to-brand-purple/5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-brand-cyan/10 rounded-xl text-brand-cyan shadow-lg shadow-brand-cyan/20">
-              <MessageSquare className="h-6 w-6" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-white gradient-text">Live Community Chat</h3>
-              <p className="text-sm text-gray-400 mt-0.5">
+      <div className="relative px-6 py-5 glass border-b-2 border-brand-cyan/20 bg-gradient-to-r from-brand-cyan/10 via-brand-blue/10 to-brand-purple/10 backdrop-blur-xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-cyan/5 to-brand-purple/5 animate-pulse" style={{ animationDuration: '4s' }} />
+        <div className="relative z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="relative p-3 bg-gradient-to-br from-brand-cyan/20 to-brand-blue/20 rounded-xl text-brand-cyan shadow-xl shadow-brand-cyan/30 hover:scale-105 transition-transform">
+                <div className="absolute inset-0 bg-brand-cyan/10 rounded-xl animate-pulse" />
+                <MessageSquare className="relative h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white gradient-text">Live Community Chat</h3>
+                <p className="text-sm text-gray-400 mt-0.5">
                 {botStatus === null ? 'Checking status...' :
                  !botStatus.configured ? 'Bot not configured' :
                  !botStatus.active ? 'Bot offline' :
                  'Connected to Discord'}
-              </p>
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3 px-4 py-2 glass rounded-full border border-brand-cyan/20">
-            <div className={`w-2.5 h-2.5 rounded-full ${
-              botStatus === null ? 'bg-gray-500' :
-              !botStatus.configured ? 'bg-red-500' :
-              !botStatus.active ? 'bg-yellow-500' :
-              'bg-brand-cyan animate-pulse shadow-lg shadow-brand-cyan/50'
-            }`}></div>
-            <span className={`text-sm font-medium ${
-              botStatus === null ? 'text-gray-400' :
-              !botStatus.configured ? 'text-red-400' :
-              !botStatus.active ? 'text-yellow-400' :
-              'text-brand-cyan'
-            }`}>
-              {botStatus === null ? 'Checking...' :
-               !botStatus.configured ? 'Not Setup' :
-               !botStatus.active ? 'Offline' :
-               'Online'}
-            </span>
+            <div className="flex items-center gap-3 px-4 py-2 glass rounded-full border-2 border-brand-cyan/30 shadow-lg">
+              <div className={`relative w-2.5 h-2.5 rounded-full ${
+                botStatus === null ? 'bg-gray-500' :
+                !botStatus.configured ? 'bg-red-500' :
+                !botStatus.active ? 'bg-yellow-500' :
+                'bg-brand-cyan shadow-lg shadow-brand-cyan/50'
+              }`}>
+                {botStatus?.configured && botStatus.active && (
+                  <div className="absolute inset-0 bg-brand-cyan rounded-full animate-ping" />
+                )}
+              </div>
+              <span className={`text-sm font-semibold ${
+                botStatus === null ? 'text-gray-400' :
+                !botStatus.configured ? 'text-red-400' :
+                !botStatus.active ? 'text-yellow-400' :
+                'text-brand-cyan'
+              }`}>
+                {botStatus === null ? 'Checking...' :
+                 !botStatus.configured ? 'Not Setup' :
+                 !botStatus.active ? 'Offline' :
+                 'Online'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -187,7 +195,7 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
       {/* Messages Container */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-transparent via-brand-cyan/[0.02] to-brand-purple/[0.02]"
+        className="flex-1 overflow-y-auto p-6 space-y-3 bg-gradient-to-b from-black/20 via-brand-cyan/[0.03] to-brand-purple/[0.03] backdrop-blur-sm"
         style={{ maxHeight: 'calc(100% - 120px)' }}
       >
         {loading ? (
@@ -201,25 +209,25 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
           </div>
         ) : (
           messages.map((message) => (
-            <div key={message.id} className="group flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 hover:bg-brand-cyan/5 p-3 rounded-xl transition-all">
+            <div key={message.id} className="group flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 hover:bg-brand-cyan/10 p-4 rounded-xl transition-all border border-transparent hover:border-brand-cyan/20 hover:shadow-lg hover:shadow-brand-cyan/10">
               <img
                 src={message.authorAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.authorName)}&background=6366f1&color=fff`}
                 alt={message.authorName}
-                className="w-12 h-12 rounded-xl flex-shrink-0 border-2 border-brand-cyan/20 group-hover:border-brand-cyan/40 transition-all shadow-lg"
+                className="w-12 h-12 rounded-xl flex-shrink-0 border-2 border-brand-cyan/30 group-hover:border-brand-cyan/50 group-hover:scale-105 transition-all shadow-lg ring-2 ring-brand-cyan/10 group-hover:ring-brand-cyan/30"
                 onError={(e) => {
                   const img = e.target as HTMLImageElement;
                   img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(message.authorName)}&background=6366f1&color=fff`;
                 }}
               />
               <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-3 mb-1.5">
-                  <span className="font-bold text-white group-hover:text-brand-cyan transition-colors">{message.authorName}</span>
-                  <span className="text-xs text-gray-500 font-medium">
+                <div className="flex items-baseline gap-3 mb-2">
+                  <span className="font-bold text-white group-hover:gradient-text transition-all">{message.authorName}</span>
+                  <span className="text-xs text-gray-500 font-medium group-hover:text-gray-400 transition-colors">
                     {formatTime(message.timestamp)}
                   </span>
                 </div>
                 {message.content && (
-                  <div className="text-gray-300 break-words whitespace-pre-wrap leading-relaxed">
+                  <div className="text-gray-300 break-words whitespace-pre-wrap leading-relaxed group-hover:text-gray-200 transition-colors">
                     {formatDiscordMessage(message.content)}
                   </div>
                 )}
@@ -323,25 +331,27 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
       </div>
 
       {/* Chat Input / CTA */}
-      <div className="p-6 glass border-t border-brand-cyan/20 bg-gradient-to-r from-brand-cyan/5 to-brand-purple/5">
+      <div className="relative p-6 glass border-t-2 border-brand-cyan/20 bg-gradient-to-r from-brand-cyan/10 via-brand-blue/10 to-brand-purple/10 backdrop-blur-xl">
+        <div className="absolute inset-0 bg-gradient-to-tl from-brand-cyan/5 to-brand-purple/5" />
+        <div className="relative z-10">
         {session && showInput && !readOnly ? (
           <form onSubmit={handleSendMessage} className="flex gap-3">
             <input
               type="text"
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
-              placeholder={(session.user as any)?.minecraftUsername 
-                ? `Message as ${(session.user as any).minecraftUsername}` 
-                : 'Type a message...'}
-              disabled={sending}
-              maxLength={2000}
-              className="flex-1 px-5 py-3 glass border border-brand-cyan/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-cyan/50 focus:shadow-lg focus:shadow-brand-cyan/20 disabled:opacity-50 transition-all"
-            />
-            <button
-              type="submit"
-              disabled={sending || !messageInput.trim()}
-              className="px-6 py-3 bg-gradient-to-r from-brand-cyan via-brand-blue to-brand-purple text-white rounded-xl font-bold hover-lift shadow-lg shadow-brand-cyan/40 hover:shadow-brand-cyan/60 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
-            >
+                placeholder={(session.user as any)?.minecraftUsername 
+                  ? `Message as ${(session.user as any).minecraftUsername}` 
+                  : 'Type a message...'}
+                disabled={sending}
+                maxLength={2000}
+                className="flex-1 px-5 py-3 glass border-2 border-brand-cyan/30 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-cyan/60 focus:shadow-xl focus:shadow-brand-cyan/30 disabled:opacity-50 transition-all backdrop-blur-sm"
+              />
+              <button
+                type="submit"
+                disabled={sending || !messageInput.trim()}
+                className="px-6 py-3 bg-gradient-to-r from-brand-cyan via-brand-blue to-brand-purple text-white rounded-xl font-bold hover:scale-105 hover:-translate-y-0.5 shadow-xl shadow-brand-cyan/50 hover:shadow-brand-cyan/70 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0 flex items-center gap-2 transition-all duration-200"
+              >
               {sending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
@@ -350,12 +360,13 @@ export function LiveChat({ readOnly = false, showInput = true, messageLimit = 50
             </button>
           </form>
         ) : (
-          <div className="text-center py-4 px-6 glass border border-brand-cyan/20 rounded-xl">
-            <p className="text-sm text-gray-300">
-              💬 <a href="/register" className="text-brand-cyan hover:text-brand-blue font-bold transition-colors">Register</a> or <a href={discordUrl} target="_blank" rel="noopener noreferrer" className="text-brand-cyan hover:text-brand-blue font-bold transition-colors">join our Discord</a> to chat with the community
-            </p>
-          </div>
-        )}
+            <div className="text-center py-4 px-6 glass border-2 border-brand-cyan/30 rounded-xl shadow-lg">
+              <p className="text-sm text-gray-300">
+                💬 <a href="/register" className="text-brand-cyan hover:text-brand-blue font-bold hover:underline transition-all">Register</a> or <a href={discordUrl} target="_blank" rel="noopener noreferrer" className="text-brand-cyan hover:text-brand-blue font-bold hover:underline transition-all">join our Discord</a> to chat with the community
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

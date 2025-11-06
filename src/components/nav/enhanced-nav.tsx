@@ -89,8 +89,9 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
       label: 'Donations',
       icon: Heart,
       dropdown: [
-        // Only show Subscribe if payment system is enabled (Stripe or Square)
-        ...(paymentsEnabled ? [{ href: '/donations/subscribe', label: 'Subscribe', icon: Crown }] : []),
+        { href: '/donations', label: 'Donation History', icon: Gift },
+        // Only show Manage Subscription if payment system is enabled (Stripe or Square)
+        ...(paymentsEnabled ? [{ href: '/donations/subscribe', label: 'Manage Subscription', icon: Crown }] : []),
         { href: '/ranks', label: 'Donor Ranks', icon: Award },
       ]
     },
@@ -123,8 +124,9 @@ export function EnhancedNav({ user }: EnhancedNavProps) {
       label: 'Donations',
       icon: Heart,
       dropdown: [
-        // Only show Subscribe if payment system is enabled (Stripe or Square)
-        ...(paymentsEnabled ? [{ href: '/donations/subscribe', label: 'Subscribe', icon: Crown }] : []),
+        { href: '/donations', label: 'Donation History', icon: Gift },
+        // Only show Manage Subscription if payment system is enabled (Stripe or Square)
+        ...(paymentsEnabled ? [{ href: '/donations/subscribe', label: 'Manage Subscription', icon: Crown }] : []),
         { href: '/ranks', label: 'Donor Ranks', icon: Award },
       ]
     },

@@ -16,9 +16,14 @@ export const users = sqliteTable('users', {
   preferredBackground: text('preferred_background'), // one of: 'space' | 'matrix' | 'data' | 'pixels' | 'neural' | 'none' (null = inherit site default)
   donationRankId: text('donation_rank_id').references(() => donationRanks.id, { onDelete: 'set null' }),
   rankExpiresAt: integer('rank_expires_at', { mode: 'timestamp' }),
+  rankPaused: integer('rank_paused', { mode: 'boolean' }).default(false),
+  pausedRankId: text('paused_rank_id'),
+  pausedRemainingDays: integer('paused_remaining_days'),
+  pausedAt: integer('paused_at', { mode: 'timestamp' }),
   totalDonated: real('total_donated').default(0),
-  // Square Payments Integration
+  // Payment Provider Integration
   squareCustomerId: text('square_customer_id').unique(), // Square customer ID for subscriptions
+  stripeCustomerId: text('stripe_customer_id').unique(), // Stripe customer ID for subscriptions
   donorRank: text('donor_rank'), // Auto-assigned donor tier (VIP, VIP+, MVP, etc.)
   // XP and Leveling System
   xp: integer('xp').default(0).notNull(),

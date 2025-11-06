@@ -69,6 +69,76 @@ async function ensureSquareColumns(db: any) {
   }
 }
 
+async function ensureStripeColumns(db: any) {
+  // Add stripe_customer_id if missing
+  if (!(await columnExists(db, 'users', 'stripe_customer_id'))) {
+    log('Adding users.stripe_customer_id');
+    await db.execute(`ALTER TABLE users ADD COLUMN stripe_customer_id TEXT;`);
+  } else {
+    log('users.stripe_customer_id already exists');
+  }
+
+  // Create unique index if possible; fallback to non-unique if necessary
+  try {
+    if (!(await indexExists(db, 'users_stripe_customer_id_unique'))) {
+      log('Creating unique index users_stripe_customer_id_unique');
+      await db.execute(`CREATE UNIQUE INDEX IF NOT EXISTS users_stripe_customer_id_unique ON users(stripe_customer_id);`);
+    } else {
+      log('Index users_stripe_customer_id_unique already exists');
+    }
+  } catch (e: any) {
+    warn(`Could not create unique index on users.stripe_customer_id: ${e?.message || e}`);
+    try {
+      if (!(await indexExists(db, 'idx_users_stripe_customer_id'))) {
+        log('Creating non-unique index idx_users_stripe_customer_id');
+        await db.execute(`CREATE INDEX IF NOT EXISTS idx_users_stripe_customer_id ON users(stripe_customer_id);`);
+      }
+    } catch (e2: any) {
+      warn(`Could not create non-unique index on users.stripe_customer_id: ${e2?.message || e2}`);
+    }
+  }
+}
+
+async function ensurePauseColumns(db: any) {
+  log('Ensuring pause columns exist');
+  try {
+    // Check if rank_paused column exists
+    await db.execute(`SELECT rank_paused FROM users LIMIT 1`);
+    log('✓ rank_paused column exists');
+  } catch {
+    // Column doesn't exist, add it
+    log('Adding rank_paused column');
+    await db.execute(`ALTER TABLE users ADD COLUMN rank_paused INTEGER DEFAULT 0`);
+  }
+
+  try {
+    // Check if paused_remaining_days column exists
+    await db.execute(`SELECT paused_remaining_days FROM users LIMIT 1`);
+    log('✓ paused_remaining_days column exists');
+  } catch {
+    log('Adding paused_remaining_days column');
+    await db.execute(`ALTER TABLE users ADD COLUMN paused_remaining_days INTEGER`);
+  }
+
+  try {
+    // Check if paused_rank_id column exists
+    await db.execute(`SELECT paused_rank_id FROM users LIMIT 1`);
+    log('✓ paused_rank_id column exists');
+  } catch {
+    log('Adding paused_rank_id column');
+    await db.execute(`ALTER TABLE users ADD COLUMN paused_rank_id TEXT`);
+  }
+
+  try {
+    // Check if paused_at column exists
+    await db.execute(`SELECT paused_at FROM users LIMIT 1`);
+    log('✓ paused_at column exists');
+  } catch {
+    log('Adding paused_at column');
+    await db.execute(`ALTER TABLE users ADD COLUMN paused_at INTEGER`);
+  }
+}
+
 async function run() {
   try {
     log('Starting safe migration');
@@ -100,6 +170,8 @@ async function run() {
     const db = createClient({ url, authToken });
 
     await ensureSquareColumns(db);
+    await ensureStripeColumns(db);
+    await ensurePauseColumns(db);
 
     log('Safe migration completed successfully');
     process.exit(0);

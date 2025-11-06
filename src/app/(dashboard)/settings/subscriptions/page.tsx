@@ -34,7 +34,8 @@ interface Subscription {
 
 export default function SubscriptionsPage() {
   const { data: session } = useSession();
-  const [squareEnabled, setSquareEnabled] = useState(false);
+  const [paymentEnabled, setPaymentEnabled] = useState(false);
+  const [paymentProvider, setPaymentProvider] = useState<'stripe' | 'square' | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -48,29 +49,38 @@ export default function SubscriptionsPage() {
     try {
       setLoading(true);
 
-      // Check if Square is enabled
-      const statusResponse = await fetch('/api/square/status');
+      // Check which payment provider is enabled
+      const statusResponse = await fetch('/api/payments/status');
       const status = await statusResponse.json();
 
-      if (!status.enabled) {
-        setSquareEnabled(false);
+      if (!status.enabled || !status.provider) {
+        setPaymentEnabled(false);
         setLoading(false);
         return;
       }
 
-      setSquareEnabled(true);
+      setPaymentEnabled(true);
+      setPaymentProvider(status.provider);
 
-      // Get user's Square customer ID from their profile
+      // Get user's customer ID from their profile
       const userResponse = await fetch('/api/user/profile');
       if (userResponse.ok) {
         const userData = await userResponse.json();
-        const squareCustomerId = userData.squareCustomerId;
         
-        if (squareCustomerId) {
-          setCustomerId(squareCustomerId);
+        // Check for appropriate customer ID based on provider
+        const customerId = status.provider === 'stripe' 
+          ? userData.stripeCustomerId 
+          : userData.squareCustomerId;
+        
+        if (customerId) {
+          setCustomerId(customerId);
           
-          // Load subscriptions
-          const subsResponse = await fetch(`/api/square/subscription?customerId=${squareCustomerId}`);
+          // Load subscriptions from appropriate provider
+          const apiEndpoint = status.provider === 'stripe'
+            ? `/api/stripe/subscription?customerId=${customerId}`
+            : `/api/square/subscription?customerId=${customerId}`;
+            
+          const subsResponse = await fetch(apiEndpoint);
           if (subsResponse.ok) {
             const subsData = await subsResponse.json();
             if (!subsData.disabled) {
@@ -83,7 +93,7 @@ export default function SubscriptionsPage() {
       setLoading(false);
     } catch (error) {
       console.error('Error loading subscriptions:', error);
-      setSquareEnabled(false);
+      setPaymentEnabled(false);
       setLoading(false);
     }
   }
@@ -96,10 +106,12 @@ export default function SubscriptionsPage() {
     try {
       setActionLoading(subscriptionId);
 
-      const response = await fetch(
-        `/api/square/subscription?subscriptionId=${subscriptionId}`,
-        { method: 'DELETE' }
-      );
+      // Use appropriate API endpoint based on provider
+      const apiEndpoint = paymentProvider === 'stripe'
+        ? `/api/stripe/subscription?subscriptionId=${subscriptionId}`
+        : `/api/square/subscription?subscriptionId=${subscriptionId}`;
+
+      const response = await fetch(apiEndpoint, { method: 'DELETE' });
 
       const data = await response.json();
 
@@ -143,7 +155,7 @@ export default function SubscriptionsPage() {
     );
   }
 
-  if (!squareEnabled) {
+  if (!paymentEnabled) {
     return (
       <div className="container max-w-4xl mx-auto p-6">
         <Card>
