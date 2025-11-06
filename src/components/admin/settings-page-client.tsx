@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Globe, Palette, Mail, Shield, Save, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -208,16 +208,103 @@ function AppearanceSettings() {
 
 function EmailSettings() {
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ host: '', port: 587, user: '', pass: '', from: '' });
+  const [loading, setLoading] = useState(true);
+  const [testing, setTesting] = useState(false);
+  const [testEmail, setTestEmail] = useState('');
+  const [form, setForm] = useState({ 
+    smtpHost: '', 
+    smtpPort: 587, 
+    smtpUser: '', 
+    smtpPass: '', 
+    fromEmail: '',
+    useTLS: true 
+  });
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/settings');
+      if (res.ok) {
+        const data = await res.json();
+        setForm({
+          smtpHost: data['email.smtpHost'] || '',
+          smtpPort: parseInt(data['email.smtpPort'] || '587'),
+          smtpUser: data['email.smtpUser'] || '',
+          smtpPass: '', // Never load password
+          fromEmail: data['email.fromEmail'] || '',
+          useTLS: data['email.useTLS'] !== 'false',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const save = async () => {
     setSaving(true);
     try {
-      await new Promise(r => setTimeout(r, 1500));
-      toast.success('Email settings saved!');
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          category: 'email',
+          data: form
+        }),
+      });
+
+      if (res.ok) {
+        toast.success('Email settings saved successfully!');
+      } else {
+        toast.error('Failed to save settings');
+      }
+    } catch (error) {
+      toast.error('Failed to save settings');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleTestEmail = async () => {
+    if (!testEmail) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    setTesting(true);
+    try {
+      const res = await fetch('/api/admin/settings/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: testEmail }),
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast.success(data.message || 'Test email sent!');
+      } else {
+        toast.error(data.error || 'Failed to send test email');
+      }
+    } catch (error) {
+      toast.error('Failed to send test email');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card className="border-slate-700 bg-slate-800/50">
+        <CardContent className="p-12 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
@@ -231,34 +318,66 @@ function EmailSettings() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <label className="block text-sm font-semibold text-gray-300 mb-2">SMTP Host</label>
-          <input value={form.host} onChange={e => setForm({...form, host: e.target.value})} placeholder="smtp.gmail.com" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white" />
+          <label className="block text-sm font-semibold text-gray-300 mb-2">SMTP Host <span className="text-red-400">*</span></label>
+          <input value={form.smtpHost} onChange={e => setForm({...form, smtpHost: e.target.value})} placeholder="smtp.gmail.com" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20" />
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">Port</label>
-            <input type="number" value={form.port} onChange={e => setForm({...form, port: parseInt(e.target.value)})} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white" />
+            <label className="block text-sm font-semibold text-gray-300 mb-2">Port <span className="text-red-400">*</span></label>
+            <input type="number" value={form.smtpPort} onChange={e => setForm({...form, smtpPort: parseInt(e.target.value)})} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20" />
+            <p className="text-xs text-gray-500 mt-1">Common: 587 (TLS) or 465 (SSL)</p>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">From Email</label>
-            <input value={form.from} onChange={e => setForm({...form, from: e.target.value})} placeholder="noreply@site.com" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white" />
+            <label className="block text-sm font-semibold text-gray-300 mb-2">From Email <span className="text-red-400">*</span></label>
+            <input value={form.fromEmail} onChange={e => setForm({...form, fromEmail: e.target.value})} placeholder="noreply@site.com" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20" />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-300 mb-2">Username</label>
-          <input value={form.user} onChange={e => setForm({...form, user: e.target.value})} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white" />
+          <label className="block text-sm font-semibold text-gray-300 mb-2">Username <span className="text-red-400">*</span></label>
+          <input value={form.smtpUser} onChange={e => setForm({...form, smtpUser: e.target.value})} placeholder="your-email@gmail.com" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20" />
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-300 mb-2">Password</label>
-          <input type="password" value={form.pass} onChange={e => setForm({...form, pass: e.target.value})} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white" />
+          <label className="block text-sm font-semibold text-gray-300 mb-2">Password <span className="text-red-400">*</span></label>
+          <input type="password" value={form.smtpPass} onChange={e => setForm({...form, smtpPass: e.target.value})} placeholder="Leave empty to keep current password" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20" />
+          <p className="text-xs text-gray-500 mt-1">Use an app-specific password for Gmail</p>
+        </div>
+
+        <label className="flex items-center p-4 bg-slate-900/50 rounded-lg border border-slate-700 cursor-pointer">
+          <input type="checkbox" checked={form.useTLS} onChange={e => setForm({...form, useTLS: e.target.checked})} className="w-4 h-4 rounded border-slate-700 text-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <span className="ml-3 text-sm text-white">Use TLS/SSL encryption</span>
+        </label>
+
+        <div className="pt-4 border-t border-slate-700">
+          <h3 className="text-sm font-semibold text-gray-300 mb-3">Test Email Configuration</h3>
+          <div className="flex gap-3">
+            <input
+              type="email"
+              value={testEmail}
+              onChange={e => setTestEmail(e.target.value)}
+              placeholder="Enter email to send test"
+              className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+            />
+            <Button onClick={handleTestEmail} disabled={testing} variant="outline" className="border-blue-500/30 hover:bg-blue-500/10">
+              {testing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending...</> : <>Send Test</>}
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">💡 Save settings first, then test</p>
         </div>
 
         <Button onClick={save} disabled={saving} size="lg" className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 h-12">
           {saving ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Saving...</> : <><Save className="h-5 w-5 mr-2" />Save Email Settings</>}
         </Button>
+
+        <Card className="border-blue-500/30 bg-blue-500/5">
+          <CardContent className="p-4">
+            <p className="text-sm text-blue-300">
+              <strong>💡 Gmail Users:</strong> Enable 2-factor authentication and create an app-specific password at <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener" className="underline hover:text-blue-200">myaccount.google.com/apppasswords</a>
+            </p>
+          </CardContent>
+        </Card>
       </CardContent>
     </Card>
   );
