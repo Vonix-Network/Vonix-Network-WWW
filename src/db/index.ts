@@ -2,19 +2,28 @@ import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from '@libsql/client';
 import * as schema from './schema';
 
-if (!process.env.TURSO_DATABASE_URL) {
-  throw new Error('TURSO_DATABASE_URL is not defined');
+// Support both local SQLite and remote Turso
+const databaseUrl = process.env.DATABASE_URL || process.env.TURSO_DATABASE_URL;
+const authToken = process.env.DATABASE_AUTH_TOKEN || process.env.TURSO_AUTH_TOKEN;
+
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL or TURSO_DATABASE_URL must be defined');
 }
 
-if (!process.env.TURSO_AUTH_TOKEN) {
-  throw new Error('TURSO_AUTH_TOKEN is not defined');
-}
+// Determine if using Turso (remote) or local SQLite
+const isRemote = databaseUrl.startsWith('libsql://') || databaseUrl.startsWith('https://');
 
-// Create the client
-const client = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
+// Create the client with appropriate configuration
+const client = createClient(
+  isRemote
+    ? {
+        url: databaseUrl,
+        authToken: authToken || '',
+      }
+    : {
+        url: databaseUrl,
+      }
+);
 
 // Create the database instance
 export const db = drizzle(client, { schema });

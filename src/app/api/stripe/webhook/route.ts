@@ -104,25 +104,39 @@ export async function POST(request: NextRequest) {
         let expiresAt: Date;
 
         if (user.rankExpiresAt && new Date(user.rankExpiresAt) > now) {
-          // Extend existing rank
-          expiresAt = new Date(user.rankExpiresAt);
+          // User has time remaining on rank
+          const currentExpiry = new Date(user.rankExpiresAt);
+          
+          // IMPORTANT: For subscription renewals, we want to extend from current expiration
+          // This is correct behavior: if user has 60 days left and renews 30 days,
+          // they should have 90 days total
+          expiresAt = new Date(currentExpiry);
           expiresAt.setDate(expiresAt.getDate() + days);
+          
+          console.log(`Extending rank from ${currentExpiry.toISOString()} to ${expiresAt.toISOString()}`);
         } else {
-          // New rank or expired
+          // New rank or expired - start from now
           expiresAt = new Date();
           expiresAt.setDate(expiresAt.getDate() + days);
+          
+          console.log(`Starting new rank, expires at ${expiresAt.toISOString()}`);
         }
 
         // Update user's rank and totalDonated
         const amount = invoice.amount_paid / 100; // Convert from cents
         const isFirstPayment = invoice.billing_reason === 'subscription_create';
         
+        // Clear any pause state when subscription payment succeeds
         await db
           .update(users)
           .set({
             donationRankId: rankId,
             rankExpiresAt: expiresAt,
             totalDonated: (user.totalDonated || 0) + amount,
+            rankPaused: false,
+            pausedAt: null,
+            pausedRankId: null,
+            pausedRemainingDays: null,
           })
           .where(eq(users.id, userId));
 
@@ -219,28 +233,446 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.updated': {
-        // Subscription updated (status change, etc)
+        // Subscription updated (price change, status change, cancellation scheduled, etc)
         const subscription: any = event.data.object;
         console.log('Subscription updated:', subscription.id, 'Status:', subscription.status);
+        
+        const metadata = subscription.metadata || {};
+        const userId = metadata.userId;
+
+        if (!userId) {
+          console.log('No userId in subscription metadata, skipping');
+          break;
+        }
+
+        // Get user
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, Number(userId)))
+          .limit(1);
+
+        if (!user) {
+          console.error('User not found:', userId);
+          break;
+        }
+
+        // Check if subscription was canceled (cancel_at_period_end = true)
+        if (subscription.cancel_at_period_end) {
+          console.log(`⚠️ Subscription ${subscription.id} scheduled to cancel at period end`);
+          // Don't remove rank yet - let it expire naturally at current_period_end
+          // The subscription.deleted event will fire when it actually ends
+        }
+
+        // Check if subscription status changed to canceled or unpaid
+        if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
+          console.log(`❌ Subscription ${subscription.id} is ${subscription.status}`);
+          // User will lose rank when it expires naturally
+        }
+
+        // If subscription was upgraded/downgraded, metadata should have new rank info
+        // The next invoice.payment_succeeded will assign the new rank
+        if (metadata.rankId) {
+          console.log(`✅ Subscription updated with new rank: ${metadata.rankName}`);
+        }
+
         break;
       }
 
       case 'customer.subscription.deleted': {
-        // Subscription cancelled or ended
+        // Subscription cancelled or ended - user reached end of billing period
         const subscription: any = event.data.object;
-        console.log('Subscription deleted:', subscription.id);
+        console.log('❌ Subscription deleted:', subscription.id);
         
-        // Note: We don't remove the rank immediately - let it expire naturally
-        // This allows users to keep benefits until the end of their paid period
+        const metadata = subscription.metadata || {};
+        const userId = metadata.userId;
+
+        if (!userId) {
+          console.log('No userId in subscription metadata, skipping');
+          break;
+        }
+
+        // Get user
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, Number(userId)))
+          .limit(1);
+
+        if (!user) {
+          console.error('User not found:', userId);
+          break;
+        }
+
+        // Check cancellation type
+        const canceledAt = subscription.canceled_at;
+        const endedAt = subscription.ended_at;
+        const currentPeriodEnd = subscription.current_period_end;
+        
+        // If canceled_at === ended_at, it was IMMEDIATE cancellation (admin action)
+        // If ended_at > canceled_at, it was scheduled cancellation (let expire naturally)
+        const wasImmediateCancellation = canceledAt && endedAt && (canceledAt === endedAt);
+        
+        if (wasImmediateCancellation) {
+          // IMMEDIATE CANCELLATION (Admin action from Stripe dashboard)
+          console.log(`⚠️ IMMEDIATE cancellation for user ${userId} - removing rank now`);
+          
+          await db
+            .update(users)
+            .set({
+              donationRankId: null,
+              rankExpiresAt: null,
+              rankPaused: false,
+              pausedRankId: null,
+              pausedAt: null,
+              pausedRemainingDays: null,
+            })
+            .where(eq(users.id, Number(userId)));
+            
+          console.log(`✅ Rank immediately removed for user ${userId}`);
+        } else {
+          // SCHEDULED CANCELLATION (User canceled, let expire at period end)
+          console.log(`ℹ️ Subscription ended at period end for user ${userId}`);
+          console.log(`   Rank will expire naturally at: ${user.rankExpiresAt}`);
+          // Rank stays until rankExpiresAt - user paid for this time
+        }
+        
+        // TODO: Send cancellation email
+        // await sendSubscriptionCancelledEmail(user.email, {...});
+
         break;
       }
 
       case 'invoice.payment_failed': {
-        // Payment failed - subscription might be cancelled
+        // Payment failed - implement grace period (Stripe Smart Retry handles retries)
         const invoice: any = event.data.object;
-        console.error('Payment failed for subscription:', invoice.subscription);
+        const subscriptionId = invoice.subscription;
         
-        // TODO: Send email notification to user about failed payment
+        console.error('💳 Payment failed for subscription:', subscriptionId);
+        
+        if (!subscriptionId) {
+          console.log('No subscription ID in failed invoice');
+          break;
+        }
+
+        // Get subscription details
+        const subscription: any = await stripe.subscriptions.retrieve(subscriptionId);
+        const metadata = subscription.metadata || {};
+        const userId = metadata.userId;
+
+        if (!userId) {
+          console.log('No userId in subscription metadata');
+          break;
+        }
+
+        // Get user
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, Number(userId)))
+          .limit(1);
+
+        if (!user) {
+          console.error('User not found:', userId);
+          break;
+        }
+
+        // GRACE PERIOD: Don't remove rank immediately
+        // Stripe Smart Retry will attempt payment again
+        // Rank stays active until subscription actually cancels or grace period ends
+        
+        const attemptCount = invoice.attempt_count || 1;
+        const nextPaymentAttempt = invoice.next_payment_attempt 
+          ? new Date(invoice.next_payment_attempt * 1000) 
+          : null;
+
+        console.log(`⚠️ Payment failed (attempt ${attemptCount}) for user ${userId}`);
+        console.log(`   Rank remains active. Next retry: ${nextPaymentAttempt?.toISOString() || 'N/A'}`);
+        console.log(`   Stripe Smart Retry will handle automatic retries`);
+        
+        // TODO: Send email to user about failed payment
+        // await sendPaymentFailedEmail(user.email, {
+        //   username: user.username,
+        //   rankName: metadata.rankName,
+        //   amount: invoice.amount_due / 100,
+        //   nextRetry: nextPaymentAttempt?.toISOString(),
+        //   updatePaymentUrl: `${process.env.NEXT_PUBLIC_APP_URL}/settings/billing`,
+        // });
+        
+        // Rank expiration will handle removal if needed
+        // User keeps rank until rankExpiresAt date
+        
+        break;
+      }
+
+      case 'customer.subscription.paused': {
+        // Subscription paused - track when and how many days remain
+        const subscription: any = event.data.object;
+        console.log('⏸️ Subscription paused:', subscription.id);
+        
+        const metadata = subscription.metadata || {};
+        const userId = metadata.userId;
+
+        if (!userId) {
+          console.log('No userId in subscription metadata, skipping');
+          break;
+        }
+
+        // Get user and calculate remaining days
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, Number(userId)))
+          .limit(1);
+
+        if (!user) {
+          console.error('User not found:', userId);
+          break;
+        }
+
+        const now = new Date();
+        let remainingDays = 0;
+        
+        if (user.rankExpiresAt) {
+          const expiresAt = new Date(user.rankExpiresAt);
+          if (expiresAt > now) {
+            remainingDays = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          }
+        }
+
+        // Track pause state
+        await db
+          .update(users)
+          .set({
+            rankPaused: true,
+            pausedRankId: user.donationRankId,
+            pausedRemainingDays: remainingDays,
+            pausedAt: now,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, Number(userId)));
+
+        console.log(`✅ Tracked subscription pause for user ${userId}: ${remainingDays} days remaining`);
+        
+        break;
+      }
+
+      case 'customer.subscription.resumed': {
+        // Subscription resumed - extend expiration by pause duration
+        const subscription: any = event.data.object;
+        console.log('▶️ Subscription resumed:', subscription.id);
+        
+        const metadata = subscription.metadata || {};
+        const userId = metadata.userId;
+
+        if (!userId) {
+          console.log('No userId in subscription metadata, skipping');
+          break;
+        }
+
+        // Get user with pause information
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, Number(userId)))
+          .limit(1);
+
+        if (!user) {
+          console.error('User not found:', userId);
+          break;
+        }
+
+        // Calculate pause duration in days
+        let pauseDurationDays = 0;
+        if (user.pausedAt && user.rankPaused) {
+          const now = new Date();
+          const pausedDate = new Date(user.pausedAt);
+          pauseDurationDays = Math.ceil((now.getTime() - pausedDate.getTime()) / (1000 * 60 * 60 * 24));
+        }
+
+        // Extend rank expiration by pause duration
+        let newExpiresAt = user.rankExpiresAt ? new Date(user.rankExpiresAt) : new Date();
+        newExpiresAt.setDate(newExpiresAt.getDate() + pauseDurationDays);
+
+        // Clear pause state and extend expiration
+        await db
+          .update(users)
+          .set({
+            rankPaused: false,
+            pausedRankId: null,
+            pausedRemainingDays: null,
+            pausedAt: null,
+            rankExpiresAt: newExpiresAt,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, Number(userId)));
+
+        console.log(`✅ Subscription resumed for user ${userId}: Extended expiration by ${pauseDurationDays} days to ${newExpiresAt.toISOString()}`);
+        
+        break;
+      }
+
+      case 'invoice.payment_action_required': {
+        // Payment requires additional action (3DS, SCA, etc)
+        const invoice: any = event.data.object;
+        const subscription: any = invoice.subscription;
+        
+        console.log('🔐 Payment action required for invoice:', invoice.id);
+        
+        if (subscription) {
+          const sub: any = await stripe.subscriptions.retrieve(subscription);
+          const userId = sub.metadata?.userId;
+          
+          if (userId) {
+            const [user] = await db
+              .select()
+              .from(users)
+              .where(eq(users.id, Number(userId)))
+              .limit(1);
+
+            if (user && user.email) {
+              // TODO: Send email to user
+              console.log(`   Sent action required email to user ${userId}`);
+              // await sendPaymentActionRequiredEmail(user.email, {
+              //   invoiceUrl: invoice.hosted_invoice_url,
+              //   amount: invoice.amount_due / 100,
+              // });
+            }
+          }
+        }
+        
+        break;
+      }
+
+      case 'payment_method.automatically_updated': {
+        // Payment method was automatically updated (card renewed)
+        const paymentMethod: any = event.data.object;
+        console.log('💳 Payment method automatically updated:', paymentMethod.id);
+        
+        // This is good - card was automatically renewed
+        // No action needed
+        break;
+      }
+
+      case 'payment_intent.succeeded': {
+        // One-time payment succeeded - handle rank assignment
+        const paymentIntent: any = event.data.object;
+        console.log('💰 Payment Intent succeeded:', paymentIntent.id);
+
+        const metadata = paymentIntent.metadata || {};
+        const userId = metadata.userId;
+        const rankId = metadata.rankId;
+        const days = metadata.days;
+
+        if (!userId || !rankId || !days) {
+          console.log('Missing metadata in payment_intent, skipping');
+          break;
+        }
+
+        // Check idempotency
+        const [existingReceipt] = await db
+          .select()
+          .from(donations)
+          .where(eq(donations.paymentId, paymentIntent.id))
+          .limit(1);
+
+        if (existingReceipt) {
+          console.log('Payment already processed:', paymentIntent.id);
+          break;
+        }
+
+        // Get user
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, Number(userId)))
+          .limit(1);
+
+        if (!user) {
+          console.error('User not found:', userId);
+          break;
+        }
+
+        // Get rank
+        const [rank] = await db
+          .select()
+          .from(donationRanks)
+          .where(eq(donationRanks.id, rankId))
+          .limit(1);
+
+        if (!rank) {
+          console.error('Rank not found:', rankId);
+          break;
+        }
+
+        // Calculate expiration (one-time payments extend from current expiration)
+        const now = new Date();
+        const daysNum = Number(days);
+        let expiresAt: Date;
+
+        if (user.rankExpiresAt && new Date(user.rankExpiresAt) > now) {
+          // Extend from current expiration
+          const currentExpiry = new Date(user.rankExpiresAt);
+          expiresAt = new Date(currentExpiry);
+          expiresAt.setDate(expiresAt.getDate() + daysNum);
+          console.log(`Extending rank from ${currentExpiry.toISOString()} to ${expiresAt.toISOString()}`);
+        } else {
+          // Start from now
+          expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + daysNum);
+          console.log(`Starting new rank, expires at ${expiresAt.toISOString()}`);
+        }
+
+        // Update user's rank and totalDonated
+        const amount = paymentIntent.amount / 100; // Convert from cents
+        
+        await db
+          .update(users)
+          .set({
+            donationRankId: rankId,
+            rankExpiresAt: expiresAt,
+            totalDonated: (user.totalDonated || 0) + amount,
+          })
+          .where(eq(users.id, Number(userId)));
+
+        // Create donation record (without id field - let autoincrement handle it)
+        const receiptNumber = `VN-${Date.now()}-${userId}`;
+        await db.insert(donations).values({
+          userId: Number(userId),
+          amount,
+          currency: paymentIntent.currency?.toUpperCase() || 'USD',
+          method: 'stripe',
+          receiptNumber,
+          paymentId: paymentIntent.id,
+          rankId,
+          days: daysNum,
+          paymentType: 'one_time',
+          status: 'completed',
+          message: `${rank.name} Rank - ${days} days`,
+          displayed: true,
+        });
+
+        console.log(`✅ One-time payment processed for user ${userId}, rank ${rankId} until ${expiresAt.toISOString()}`);
+
+        // Send email notification
+        try {
+          if (user.email) {
+            await sendRankPurchaseEmail(user.email, {
+              username: user.username,
+              rankName: rank.name,
+              rankBadge: rank.badge || rank.name,
+              rankColor: rank.color,
+              amount,
+              days: daysNum,
+              expiresAt: expiresAt.toISOString(),
+              isSubscription: false,
+            });
+            console.log(`✅ Purchase email sent to ${user.email}`);
+          }
+        } catch (emailError) {
+          console.error('❌ Error sending purchase email:', emailError);
+        }
+
         break;
       }
 

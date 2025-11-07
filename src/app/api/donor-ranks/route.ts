@@ -24,6 +24,7 @@ export async function GET() {
     const ranks = rawRanks.map(rank => ({
       id: rank.id,
       name: rank.name,
+      subtitle: rank.subtitle,
       description: rank.subtitle || `Get the ${rank.name} rank and unlock exclusive perks!`,
       features: [
         'Custom name color',
@@ -38,7 +39,8 @@ export async function GET() {
       icon: rank.icon,
       badge: rank.badge,
       glow: rank.glow,
-      minDonation: rank.minAmount,
+      minAmount: rank.minAmount, // Use minAmount (not minDonation)
+      minDonation: rank.minAmount, // Keep for backward compatibility
       priority: rank.minAmount, // Use minAmount as priority for sorting
     }));
 

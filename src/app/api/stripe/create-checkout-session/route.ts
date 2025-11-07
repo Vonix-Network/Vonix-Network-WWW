@@ -40,6 +40,23 @@ export async function POST(request: NextRequest) {
     
     const { rankId, days, amount, isRecurring } = body;
 
+    // Check if subscriptions are enabled (controlled by ENABLE_SUBSCRIPTIONS env var)
+    if (isRecurring) {
+      const { isSubscriptionsEnabled, getSubscriptionsDisabledMessage } = await import('@/lib/subscription-config');
+      
+      if (!isSubscriptionsEnabled()) {
+        console.log('⚠️ Subscription attempt blocked: ENABLE_SUBSCRIPTIONS is disabled');
+        return NextResponse.json(
+          { 
+            error: 'SUBSCRIPTIONS_DISABLED',
+            message: getSubscriptionsDisabledMessage(),
+            suggestion: 'Please use one-time payment option instead.',
+          },
+          { status: 503 }
+        );
+      }
+    }
+
     if (!rankId || !days || !amount) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -64,6 +81,69 @@ export async function POST(request: NextRequest) {
 
     console.log('User found:', { id: user.id, hasStripeCustomerId: !!user.stripeCustomerId });
 
+    // CRITICAL: Check for existing active subscriptions
+    if (user.stripeCustomerId && isRecurring) {
+      console.log('Checking for existing subscriptions...');
+      const existingSubs = await stripe.subscriptions.list({
+        customer: user.stripeCustomerId,
+        status: 'active',
+        limit: 10,
+      });
+
+      if (existingSubs.data.length > 0) {
+        const activeSub: any = existingSubs.data[0];
+        const currentRankId = activeSub.metadata?.rankId;
+        
+        console.log('Found active subscription:', activeSub.id, 'for rank:', currentRankId);
+
+        // If trying to create recurring subscription for SAME rank - BLOCK (would be duplicate)
+        if (currentRankId === rankId) {
+          return NextResponse.json({
+            error: 'DUPLICATE_SUBSCRIPTION',
+            message: 'You already have an active subscription for this rank.',
+            suggestion: 'Your subscription will automatically renew. No need to purchase again!',
+            existingSubscription: {
+              id: activeSub.id,
+              rankName: activeSub.metadata?.rankName || 'Unknown',
+              nextBilling: new Date(activeSub.current_period_end * 1000).toISOString(),
+            },
+          }, { status: 409 });
+        }
+
+        // If trying to create recurring subscription for DIFFERENT rank - suggest upgrade
+        return NextResponse.json({
+          error: 'SUBSCRIPTION_EXISTS',
+          message: 'You already have an active subscription for a different rank.',
+          suggestion: 'Would you like to upgrade/change your subscription instead?',
+          action: 'UPDATE_SUBSCRIPTION',
+          currentSubscription: {
+            id: activeSub.id,
+            rankId: currentRankId,
+            rankName: activeSub.metadata?.rankName || 'Unknown',
+          },
+          targetRank: {
+            rankId,
+            amount,
+            days,
+          },
+        }, { status: 409 });
+      }
+    }
+
+    // If user has active subscription and trying to extend (one-time) - WARNING but allow
+    if (user.stripeCustomerId && !isRecurring) {
+      const existingSubs = await stripe.subscriptions.list({
+        customer: user.stripeCustomerId,
+        status: 'active',
+        limit: 1,
+      });
+
+      if (existingSubs.data.length > 0) {
+        console.log('User has active subscription but purchasing one-time extension - allowing');
+        // This is OK - just adds days, doesn't affect subscription billing
+      }
+    }
+
     // Get rank details
     console.log('Fetching rank from database:', rankId);
     const [rank] = await db
@@ -80,6 +160,55 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Rank found:', { id: rank.id, name: rank.name });
+
+    // AUTO-SYNC: Check if rank needs Stripe products/prices configured
+    if (isRecurring) {
+      const { rankNeedsSync, syncRankProducts } = await import('@/lib/stripe-product-sync');
+      
+      if (rankNeedsSync(rank)) {
+        console.log(`⚠️ Rank ${rank.name} missing Stripe products/prices, auto-syncing...`);
+        
+        try {
+          const syncResult = await syncRankProducts(stripe, rank.id);
+          
+          if (!syncResult.success) {
+            console.error('Failed to auto-sync Stripe products:', syncResult.error);
+            return NextResponse.json(
+              { 
+                error: 'STRIPE_SETUP_FAILED',
+                message: `Could not configure subscription for ${rank.name}.`,
+                details: syncResult.error || 'Unable to create Stripe products',
+                suggestion: 'Please try a one-time payment instead, or contact an administrator.',
+              },
+              { status: 503 }
+            );
+          }
+          
+          console.log(`✅ Auto-sync successful for ${rank.name}`);
+          
+          // Refresh rank data with new product IDs
+          const [updatedRank] = await db
+            .select()
+            .from(donationRanks)
+            .where(eq(donationRanks.id, rankId));
+          
+          if (updatedRank) {
+            Object.assign(rank, updatedRank);
+          }
+        } catch (syncError: any) {
+          console.error('Exception during auto-sync:', syncError);
+          return NextResponse.json(
+            { 
+              error: 'STRIPE_SETUP_FAILED',
+              message: `Could not configure subscription for ${rank.name}.`,
+              details: syncError.message || 'An unexpected error occurred',
+              suggestion: 'Please try a one-time payment instead, or contact an administrator.',
+            },
+            { status: 503 }
+          );
+        }
+      }
+    }
 
     // Get or create Stripe customer
     let customerId = user.stripeCustomerId;
@@ -133,40 +262,69 @@ export async function POST(request: NextRequest) {
     let checkoutSession;
 
     if (isRecurring) {
-      // SUBSCRIPTION MODE - Stripe handles everything!
+      // SUBSCRIPTION MODE - Use catalog prices (Stripe best practice)
       console.log('Creating subscription checkout session...');
       
-      // Calculate Stripe price based on interval
-      const interval = days === 90 ? 'month' as const : days === 180 ? 'month' as const : days === 365 ? 'year' as const : 'month' as const;
-      const intervalCount = days === 90 ? 3 : days === 180 ? 6 : days === 365 ? 1 : 1;
+      // Get price ID from product catalog based on interval
+      let priceId: string | null | undefined;
+      let intervalName: string;
+      let fieldName: 'stripePriceMonthly' | 'stripePriceQuarterly' | 'stripePriceSemiannual' | 'stripePriceYearly';
       
-      // Create display name for interval
-      const intervalName = days === 90 ? 'Every 3 Months' : days === 180 ? 'Every 6 Months' : days === 365 ? 'Yearly' : 'Monthly';
-      
-      // Create price with metadata
-      const price = await stripe.prices.create({
-        currency: 'usd',
-        unit_amount: Math.round(amount * 100),
-        recurring: { interval, interval_count: intervalCount },
-        product_data: {
-          name: `${rank.name} Rank - ${intervalName}`,
-          metadata: {
-            rankId,
-            rankName: rank.name,
-            days: days.toString(),
-            interval: intervalName,
-          },
-        },
-      });
+      if (days === 30) {
+        priceId = rank.stripePriceMonthly;
+        intervalName = 'Monthly';
+        fieldName = 'stripePriceMonthly';
+      } else if (days === 90) {
+        priceId = rank.stripePriceQuarterly;
+        intervalName = 'Every 3 Months';
+        fieldName = 'stripePriceQuarterly';
+      } else if (days === 180) {
+        priceId = rank.stripePriceSemiannual;
+        intervalName = 'Every 6 Months';
+        fieldName = 'stripePriceSemiannual';
+      } else if (days === 365) {
+        priceId = rank.stripePriceYearly;
+        intervalName = 'Yearly';
+        fieldName = 'stripePriceYearly';
+      } else {
+        priceId = rank.stripePriceMonthly;
+        intervalName = 'Monthly';
+        fieldName = 'stripePriceMonthly';
+      }
 
-      console.log('Price created:', price.id);
+      // Validate priceId exists and looks like a real Stripe price (price_*)
+      if (!priceId || typeof priceId !== 'string' || !priceId.startsWith('price_')) {
+        const provided = priceId || '(empty)';
+        const msg = `Missing or invalid Stripe price ID in donation_ranks.${fieldName} for rank '${rank.name}' (id=${rank.id}). Found: '${provided}'.`;
+        console.error(msg, 'Requested days:', days);
+        return NextResponse.json(
+          {
+            error: 'CATALOG_PRICE_NOT_CONFIGURED',
+            message: msg,
+            hint: "Populate the donation_ranks catalog fields with real Stripe price IDs or run your product setup script.",
+            fields: {
+              productId: rank.stripeProductId || null,
+              monthly: rank.stripePriceMonthly || null,
+              quarterly: rank.stripePriceQuarterly || null,
+              semiannual: rank.stripePriceSemiannual || null,
+              yearly: rank.stripePriceYearly || null,
+            },
+          },
+          { status: 400 }
+        );
+      }
+
+      console.log('Using catalog price:', priceId, 'for', intervalName);
+
+      // Generate idempotency key to prevent double-charges
+      const idempotencyKey = `checkout_sub_${session.user.id}_${rankId}_${days}_${Date.now()}`;
 
       checkoutSession = await stripe.checkout.sessions.create({
         customer: customerId,
         mode: 'subscription',
         line_items: [
           {
-            price: price.id,
+            price: priceId,
             quantity: 1,
           },
         ],
@@ -189,12 +347,21 @@ export async function POST(request: NextRequest) {
         },
         allow_promotion_codes: true,
         billing_address_collection: 'auto',
+        automatic_tax: { enabled: true },
+        customer_update: {
+          address: 'auto', // Automatically save address for tax calculation
+        },
+      }, {
+        idempotencyKey, // Prevent duplicate charges on retry
       });
 
       console.log('Subscription checkout session created:', checkoutSession.id);
     } else {
       // ONE-TIME PAYMENT MODE
       console.log('Creating one-time payment checkout session...');
+
+      // Generate idempotency key for one-time payment
+      const idempotencyKey = `checkout_pay_${session.user.id}_${rankId}_${days}_${Date.now()}`;
 
       checkoutSession = await stripe.checkout.sessions.create({
         customer: customerId,
@@ -228,6 +395,12 @@ export async function POST(request: NextRequest) {
         },
         allow_promotion_codes: true,
         billing_address_collection: 'auto',
+        automatic_tax: { enabled: true },
+        customer_update: {
+          address: 'auto', // Automatically save address for tax calculation
+        },
+      }, {
+        idempotencyKey, // Prevent duplicate charges
       });
 
       console.log('One-time checkout session created:', checkoutSession.id);

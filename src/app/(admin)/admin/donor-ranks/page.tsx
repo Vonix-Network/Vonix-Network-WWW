@@ -1,8 +1,8 @@
 import { requireAdmin } from '@/lib/auth';
 import { db } from '@/db';
 import { donationRanks, users } from '@/db/schema';
-import { DonorRanksClient } from '@/components/admin/donor-ranks-client';
-import { Crown, Users, TrendingUp, DollarSign, Sparkles } from 'lucide-react';
+import { DonorRanksManagement } from '@/components/admin/donor-ranks-management';
+import { Crown, Users as UsersIcon, TrendingUp, DollarSign } from 'lucide-react';
 import { sql } from 'drizzle-orm';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -43,7 +43,7 @@ export default async function DonorRanksPage() {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10 blur-3xl"></div>
         <div className="container mx-auto px-6 py-12 relative z-10">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-2 rounded-full mb-6">
               <Crown className="h-4 w-4 text-purple-400" />
               <span className="text-sm font-medium text-purple-400">Admin Panel</span>
@@ -55,7 +55,7 @@ export default async function DonorRanksPage() {
             </h1>
             
             <p className="text-xl text-gray-300 mb-8">
-              Create and manage donation ranks, configure pricing, and track user subscriptions
+              Create ranks, configure pricing, manage Stripe integration, and assign ranks to users
             </p>
 
             {/* Stats Grid */}
@@ -76,7 +76,7 @@ export default async function DonorRanksPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="bg-purple-500/20 p-2 rounded-lg">
-                      <Users className="h-5 w-5 text-purple-400" />
+                      <UsersIcon className="h-5 w-5 text-purple-400" />
                     </div>
                     <p className="text-sm text-gray-400">Active Users</p>
                   </div>
@@ -112,10 +112,10 @@ export default async function DonorRanksPage() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content with Tabs */}
       <div className="container mx-auto px-6 pb-16">
-        <div className="max-w-5xl mx-auto">
-          <DonorRanksClient initialRanks={ranksWithCounts} />
+        <div className="max-w-7xl mx-auto">
+          <DonorRanksManagement initialRanks={ranksWithCounts} />
         </div>
       </div>
     </div>

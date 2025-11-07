@@ -1,5 +1,5 @@
 import { getServerSession } from '@/lib/auth';
-import { EnhancedNav } from '@/components/nav/enhanced-nav';
+import { EnterpriseNav } from '@/components/nav/enterprise-nav';
 import BackgroundWrapper from '@/components/backgrounds/BackgroundWrapper';
 
 // Force dynamic rendering - NO CACHING
@@ -19,7 +19,7 @@ export default async function PublicLayout({
       {/* Admin-Configurable Animated Background - Remounts on route change */}
       <BackgroundWrapper />
 
-      <EnhancedNav user={session?.user} />
+      <EnterpriseNav user={session?.user} />
       <main className="container mx-auto px-4 py-8">
         {children}
       </main>

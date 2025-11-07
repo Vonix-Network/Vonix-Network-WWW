@@ -8,19 +8,29 @@
  * - Is idempotent (safe to run multiple times)
  */
 
+// CRITICAL: Load environment variables BEFORE any dynamic imports
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import chalk from 'chalk';
 
-// Load environment variables
+// Load .env file FIRST
 config({ path: resolve(process.cwd(), '.env') });
 
-import { db, client, checkDatabaseConnection } from './index';
-import { addXPSystem } from './add-xp-system';
-import { addGroupPostsAndReporting } from './add-group-posts-and-reporting';
+// Verify environment variables are loaded
+if (!process.env.DATABASE_URL && !process.env.TURSO_DATABASE_URL) {
+  console.error(chalk.red('\n❌ Error: DATABASE_URL or TURSO_DATABASE_URL not found in environment'));
+  console.error(chalk.yellow('Make sure you have a .env file with database credentials\n'));
+  process.exit(1);
+}
 
 async function initializeDatabase() {
   console.log(chalk.blue('\n🚀 Initializing Vonix Network Database...\n'));
+
+  // Use dynamic imports AFTER env vars are loaded
+  const { db, client, checkDatabaseConnection } = await import('./index');
+  const { addXPSystem } = await import('./add-xp-system');
+  const { addGroupPostsAndReporting } = await import('./add-group-posts-and-reporting');
+  const { createPerformanceIndexes } = await import('./indexes');
 
   try {
     // Step 1: Check database connection
@@ -47,12 +57,12 @@ async function initializeDatabase() {
 
     // Step 3: Add post counts columns
     console.log(chalk.cyan('📊 Step 3: Adding post engagement columns...'));
-    await addPostCounts();
+    await addPostCounts(client);
     console.log(chalk.green('✓ Post engagement columns ready\n'));
 
     // Step 4: Add rank expiration
     console.log(chalk.cyan('👑 Step 4: Adding rank expiration system...'));
-    await addRankExpiration();
+    await addRankExpiration(client);
     console.log(chalk.green('✓ Rank expiration system ready\n'));
 
     // Step 5: Add XP and Leveling system
@@ -62,7 +72,7 @@ async function initializeDatabase() {
 
     // Step 6: Add user preferences
     console.log(chalk.cyan('🎨 Step 6: Adding user preference system...'));
-    await addUserPreferences();
+    await addUserPreferences(client);
     console.log(chalk.green('✓ User preferences ready\n'));
 
     // Step 7: Add group posts and content reporting
@@ -70,9 +80,19 @@ async function initializeDatabase() {
     await addGroupPostsAndReporting();
     console.log(chalk.green('✓ Group posts and reporting system ready\n'));
 
-    // Step 8: Verify all tables exist
-    console.log(chalk.cyan('🔍 Step 8: Verifying database integrity...'));
-    await verifyDatabaseIntegrity();
+    // Step 8: Add Stripe product catalog columns
+    console.log(chalk.cyan('💳 Step 8: Adding Stripe product catalog integration...'));
+    await addStripeProductCatalog(client);
+    console.log(chalk.green('✓ Stripe product catalog ready\n'));
+
+    // Step 9: Create performance indexes
+    console.log(chalk.cyan('⚡ Step 9: Creating performance indexes...'));
+    await createPerformanceIndexes();
+    console.log(chalk.green('✓ Performance indexes created\n'));
+
+    // Step 10: Verify database integrity
+    console.log(chalk.cyan('🔍 Step 10: Verifying database integrity...'));
+    await verifyDatabaseIntegrity(client);
     console.log(chalk.green('✓ All tables verified\n'));
 
     // Success!
@@ -85,6 +105,8 @@ async function initializeDatabase() {
     console.log(chalk.gray('  • User preferences (background, etc.)'));
     console.log(chalk.gray('  • Group posts system (3 tables)'));
     console.log(chalk.gray('  • Content reporting system (1 table)'));
+    console.log(chalk.gray('  • Stripe product catalog integration (5 columns)'));
+    console.log(chalk.gray('  • Performance indexes for all major tables'));
     console.log(chalk.gray('  • 10 Achievements seeded'));
     console.log(chalk.gray('  • 6 Level rewards configured\n'));
 
@@ -95,7 +117,7 @@ async function initializeDatabase() {
   }
 }
 
-async function addPostCounts() {
+async function addPostCounts(client: any) {
   try {
     // Check if columns exist
     const tableInfo = await client.execute('PRAGMA table_info(social_posts)');
@@ -124,7 +146,7 @@ async function addPostCounts() {
   }
 }
 
-async function addRankExpiration() {
+async function addRankExpiration(client: any) {
   try {
     const tableInfo = await client.execute('PRAGMA table_info(users)');
     const hasRankExpiration = tableInfo.rows.some((col: any) => col.name === 'rank_expires_at');
@@ -144,7 +166,7 @@ async function addRankExpiration() {
   }
 }
 
-async function addUserPreferences() {
+async function addUserPreferences(client: any) {
   try {
     const tableInfo = await client.execute('PRAGMA table_info(users)');
     const hasPreferredBackground = tableInfo.rows.some((col: any) => col.name === 'preferred_background');
@@ -164,7 +186,41 @@ async function addUserPreferences() {
   }
 }
 
-async function verifyDatabaseIntegrity() {
+async function addStripeProductCatalog(client: any) {
+  try {
+    const tableInfo = await client.execute('PRAGMA table_info(donation_ranks)');
+    const existingColumns = tableInfo.rows.map((col: any) => col.name);
+    
+    const columnsToAdd = [
+      { name: 'stripe_product_id', sql: 'stripe_product_id TEXT' },
+      { name: 'stripe_price_monthly', sql: 'stripe_price_monthly TEXT' },
+      { name: 'stripe_price_quarterly', sql: 'stripe_price_quarterly TEXT' },
+      { name: 'stripe_price_semiannual', sql: 'stripe_price_semiannual TEXT' },
+      { name: 'stripe_price_yearly', sql: 'stripe_price_yearly TEXT' },
+    ];
+
+    let added = 0;
+    for (const column of columnsToAdd) {
+      if (!existingColumns.includes(column.name)) {
+        await client.execute(`ALTER TABLE donation_ranks ADD COLUMN ${column.sql}`);
+        console.log(chalk.gray(`  → Added ${column.name} column`));
+        added++;
+      }
+    }
+
+    if (added === 0) {
+      console.log(chalk.gray('  → Stripe product catalog columns already exist'));
+    }
+  } catch (error: any) {
+    if (error.message?.includes('no such table')) {
+      console.log(chalk.gray('  → Table will be created by schema'));
+    } else {
+      throw error;
+    }
+  }
+}
+
+async function verifyDatabaseIntegrity(client: any) {
   const requiredTables = [
     'users',
     'social_posts',

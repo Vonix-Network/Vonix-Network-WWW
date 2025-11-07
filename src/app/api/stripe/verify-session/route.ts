@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // Retrieve the checkout session with expanded data
     const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['subscription', 'payment_intent'],
+      expand: ['subscription', 'payment_intent', 'invoice'],
     });
 
     console.log('Checkout session retrieved:', {
@@ -107,29 +107,31 @@ export async function GET(request: NextRequest) {
 
     console.log('Rank assigned successfully, expiration:', result.expiresAt);
 
-    // For subscriptions, the webhook creates the receipt
-    // For one-time payments, we create it here
+    // Extract payment details
     let receiptNumber: string | undefined;
     const amount = checkoutSession.amount_total! / 100;
-    const paymentId = typeof checkoutSession.payment_intent === 'string' 
-      ? checkoutSession.payment_intent 
-      : checkoutSession.payment_intent?.id;
+    
+    // Get payment ID from payment_intent or invoice
+    let paymentId: string | undefined;
+    if (checkoutSession.payment_intent) {
+      paymentId = typeof checkoutSession.payment_intent === 'string' 
+        ? checkoutSession.payment_intent 
+        : checkoutSession.payment_intent?.id;
+    } else if (checkoutSession.invoice) {
+      // For subscriptions, get payment_intent from invoice
+      const invoice: any = checkoutSession.invoice;
+      paymentId = typeof invoice.payment_intent === 'string'
+        ? invoice.payment_intent
+        : invoice.payment_intent?.id;
+    }
+    
     const subscriptionId = typeof subscription === 'string' ? subscription : subscription?.id;
 
     if (checkoutSession.mode === 'subscription') {
-      // Subscription: Webhook will create receipt, just wait for it
-      console.log('Subscription payment - webhook will create receipt');
-      
-      // Give webhook a moment to process, then fetch receipt
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const [webhookReceipt] = await db
-        .select()
-        .from(donations)
-        .where(eq(donations.subscriptionId, subscriptionId || ''))
-        .limit(1);
-      
-      receiptNumber = webhookReceipt?.receiptNumber || undefined;
+      // Subscription: Generate receipt immediately for user display
+      // Webhook will also create a receipt in the donations table
+      console.log('Subscription payment - generating display receipt');
+      receiptNumber = `VN-${Date.now()}-${userId}-SUB`;
     } else {
       // One-time payment: Create receipt here
       // Check if receipt already exists (prevent duplicates)
@@ -202,13 +204,13 @@ export async function GET(request: NextRequest) {
       success: true,
       message: 'Your rank has been activated!',
       receipt: {
-        receiptNumber,
+        receiptNumber: receiptNumber || `VN-${Date.now()}-${userId}`,
         rankName: rank.name,
         amount,
         currency: checkoutSession.currency?.toUpperCase() || 'USD',
         days,
         paymentType: checkoutSession.mode === 'subscription' ? 'subscription' : 'one_time',
-        paymentId,
+        paymentId: paymentId || checkoutSession.id,
         subscriptionId,
         date: new Date().toISOString(),
         expiresAt: result.expiresAt?.toISOString(),

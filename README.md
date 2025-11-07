@@ -20,12 +20,14 @@ Welcome to the official web application for the Vonix Network. This project serv
 
 ## 📚 Documentation
 
-This project is documented in the `/docs` directory. For a complete overview, please start with the following files:
+Comprehensive documentation is available in the `/docs` directory:
 
-- **[Getting Started](./docs/01-getting-started.md)**: How to set up and run the project locally.
-- **[Project Structure](./docs/02-project-structure.md)**: An overview of the repository layout.
-- **[Features Guide](./docs/03-features.md)**: A detailed guide to all application features.
-- **[Deployment](./docs/04-deployment.md)**: Instructions for deploying the application to production.
+- **[Deployment Guide](./docs/DEPLOYMENT.md)**: Production deployment instructions
+- **[Stripe Integration](./docs/STRIPE_INTEGRATION.md)**: Payment processing and subscriptions
+- **[Admin Features](./docs/ADMIN_FEATURES.md)**: Admin panel and management tools
+- **[Server Host AI Guide](./Server_Host_AI_Doc.md)**: Server administration and setup
+
+For development setup, see the Quick Start section below.
 
 ---
 

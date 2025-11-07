@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/auth';
-import { EnhancedNav } from '@/components/nav/enhanced-nav';
+import { EnterpriseNav } from '@/components/nav/enterprise-nav';
 import BackgroundWrapper from '@/components/backgrounds/BackgroundWrapper';
 
 // Force dynamic rendering - NO CACHING
@@ -24,7 +24,7 @@ export default async function DashboardLayout({
       {/* Admin-Configurable Animated Background - Remounts on route change */}
       <BackgroundWrapper />
 
-      <EnhancedNav user={session.user} />
+      <EnterpriseNav user={session.user} />
       <main className="w-full p-0">
         {children}
       </main>

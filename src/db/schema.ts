@@ -227,6 +227,10 @@ export const donations = sqliteTable('donations', {
   days: integer('days'), // Duration purchased
   paymentType: text('payment_type', { enum: ['one_time', 'subscription', 'subscription_renewal'] }).default('one_time'),
   status: text('status', { enum: ['completed', 'pending', 'failed', 'refunded'] }).default('completed').notNull(),
+  // Stripe Invoice Integration (Best Practice)
+  stripeInvoiceId: text('stripe_invoice_id'), // Stripe invoice ID
+  stripeInvoiceUrl: text('stripe_invoice_url'), // Hosted invoice URL
+  stripePriceId: text('stripe_price_id'), // Which Stripe price was used
   createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
 
@@ -242,6 +246,12 @@ export const donationRanks = sqliteTable('donation_ranks', {
   glow: integer('glow', { mode: 'boolean' }).default(false).notNull(),
   duration: integer('duration').default(30).notNull(), // days
   subtitle: text('subtitle'),
+  // Stripe Product Catalog Integration (Best Practice)
+  stripeProductId: text('stripe_product_id'), // Stripe Product ID
+  stripePriceMonthly: text('stripe_price_monthly'), // 30 days
+  stripePriceQuarterly: text('stripe_price_quarterly'), // 90 days
+  stripePriceSemiannual: text('stripe_price_semiannual'), // 180 days
+  stripePriceYearly: text('stripe_price_yearly'), // 365 days
   createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`).notNull(),
 });
