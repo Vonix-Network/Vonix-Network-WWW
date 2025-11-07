@@ -107,73 +107,94 @@ export async function GET(request: NextRequest) {
 
     console.log('Rank assigned successfully, expiration:', result.expiresAt);
 
-    // Prepare receipt data
+    // For subscriptions, the webhook creates the receipt
+    // For one-time payments, we create it here
+    let receiptNumber: string | undefined;
     const amount = checkoutSession.amount_total! / 100;
     const paymentId = typeof checkoutSession.payment_intent === 'string' 
       ? checkoutSession.payment_intent 
       : checkoutSession.payment_intent?.id;
     const subscriptionId = typeof subscription === 'string' ? subscription : subscription?.id;
 
-    // Check if receipt already exists (prevent duplicates)
-    const [existingReceipt] = await db
-      .select()
-      .from(donations)
-      .where(eq(donations.paymentId, paymentId || ''))
-      .limit(1);
-
-    let receiptNumber: string;
-    
-    if (existingReceipt) {
-      console.log('Receipt already exists:', existingReceipt.receiptNumber);
-      receiptNumber = existingReceipt.receiptNumber || `VN-${Date.now()}-${userId}`;
+    if (checkoutSession.mode === 'subscription') {
+      // Subscription: Webhook will create receipt, just wait for it
+      console.log('Subscription payment - webhook will create receipt');
+      
+      // Give webhook a moment to process, then fetch receipt
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const [webhookReceipt] = await db
+        .select()
+        .from(donations)
+        .where(eq(donations.subscriptionId, subscriptionId || ''))
+        .limit(1);
+      
+      receiptNumber = webhookReceipt?.receiptNumber || undefined;
     } else {
-      // Create new receipt
-      receiptNumber = `VN-${Date.now()}-${userId}`;
-
-      await db.insert(donations).values({
-        userId,
-        amount,
-        currency: checkoutSession.currency?.toUpperCase() || 'USD',
-        method: 'stripe',
-        receiptNumber,
-        paymentId,
-        subscriptionId,
-        rankId,
-        days,
-        paymentType: checkoutSession.mode === 'subscription' ? 'subscription' : 'one_time',
-        status: 'completed',
-        message: `${rank.name} Rank - ${days} days`,
-        displayed: true,
-      });
-
-      console.log('Receipt created:', receiptNumber);
-    }
-
-    // Send email
-    try {
-      const [user] = await db
-        .select({ email: users.email, username: users.username })
-        .from(users)
-        .where(eq(users.id, userId))
+      // One-time payment: Create receipt here
+      // Check if receipt already exists (prevent duplicates)
+      const [existingReceipt] = await db
+        .select()
+        .from(donations)
+        .where(eq(donations.paymentId, paymentId || ''))
         .limit(1);
 
-      if (user?.email && result.expiresAt) {
-        await sendRankPurchaseEmail(user.email, {
-          username: user.username,
-          rankName: rank.name,
-          rankBadge: rank.badge || rank.name,
-          rankColor: rank.color,
+      if (existingReceipt) {
+        console.log('Receipt already exists:', existingReceipt.receiptNumber);
+        receiptNumber = existingReceipt.receiptNumber || `VN-${Date.now()}-${userId}`;
+      } else {
+        // Create new receipt for one-time payment
+        receiptNumber = `VN-${Date.now()}-${userId}`;
+
+        await db.insert(donations).values({
+          userId,
           amount,
+          currency: checkoutSession.currency?.toUpperCase() || 'USD',
+          method: 'stripe',
+          receiptNumber,
+          paymentId,
+          subscriptionId: null,
+          rankId,
           days,
-          expiresAt: result.expiresAt.toISOString(),
-          isSubscription: checkoutSession.mode === 'subscription',
-          subscriptionInterval: days === 90 ? 'Every 3 Months' : days === 180 ? 'Every 6 Months' : days === 365 ? 'Yearly' : 'Monthly',
-          nextBillingDate: checkoutSession.mode === 'subscription' ? result.expiresAt.toISOString() : undefined,
+          paymentType: 'one_time',
+          status: 'completed',
+          message: `${rank.name} Rank - ${days} days`,
+          displayed: true,
         });
-        console.log('Confirmation email sent');
+
+        console.log('One-time payment receipt created:', receiptNumber);
       }
-    } catch (emailError) {
-      console.error('Error sending email:', emailError);
+    }
+
+    // Send email (only for one-time payments; webhook handles subscription emails)
+    if (checkoutSession.mode !== 'subscription') {
+      try {
+        const [user] = await db
+          .select({ email: users.email, username: users.username })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+
+        if (user?.email && result.expiresAt) {
+          await sendRankPurchaseEmail(user.email, {
+            username: user.username,
+            rankName: rank.name,
+            rankBadge: rank.badge || rank.name,
+            rankColor: rank.color,
+            amount,
+            days,
+            expiresAt: result.expiresAt.toISOString(),
+            isSubscription: false,
+            subscriptionInterval: undefined,
+            nextBillingDate: undefined,
+          });
+          console.log('Confirmation email sent for one-time payment');
+        }
+      } catch (emailError) {
+        console.error('Error sending email:', emailError);
+      }
+    } else {
+      console.log('Subscription email will be sent by webhook');
     }
 
     // Return success with receipt

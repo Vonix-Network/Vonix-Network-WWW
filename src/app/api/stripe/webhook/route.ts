@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '@/db';
-import { users, donationRanks } from '@/db/schema';
+import { users, donationRanks, donations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { sendSubscriptionRenewalEmail, sendRankPurchaseEmail } from '@/lib/email';
 
@@ -48,6 +48,19 @@ export async function POST(request: NextRequest) {
         if (!subscriptionId) {
           console.log('No subscription ID in invoice');
           break;
+        }
+
+        // Check if we already processed this invoice (idempotency)
+        const invoiceId = invoice.id;
+        const [existingReceipt] = await db
+          .select()
+          .from(donations)
+          .where(eq(donations.paymentId, invoiceId))
+          .limit(1);
+
+        if (existingReceipt) {
+          console.log('Invoice already processed:', invoiceId);
+          break; // Already handled, skip
         }
 
         // Get subscription details
@@ -100,7 +113,7 @@ export async function POST(request: NextRequest) {
           expiresAt.setDate(expiresAt.getDate() + days);
         }
 
-        // Update user's rank
+        // Update user's rank and totalDonated
         const amount = invoice.amount_paid / 100; // Convert from cents
         const isFirstPayment = invoice.billing_reason === 'subscription_create';
         
@@ -113,7 +126,25 @@ export async function POST(request: NextRequest) {
           })
           .where(eq(users.id, userId));
 
-        console.log(`Rank extended for user ${userId} until ${expiresAt}`);
+        // Create receipt (webhook is source of truth for subscriptions)
+        const receiptNumber = `VN-${Date.now()}-${userId}`;
+        await db.insert(donations).values({
+          userId,
+          amount,
+          currency: invoice.currency?.toUpperCase() || 'USD',
+          method: 'stripe',
+          receiptNumber,
+          paymentId: invoiceId, // Use invoice ID for idempotency
+          subscriptionId: subscriptionId,
+          rankId,
+          days,
+          paymentType: isFirstPayment ? 'subscription' : 'subscription_renewal',
+          status: 'completed',
+          message: `${rank.name} Rank - ${days} days ${isFirstPayment ? '(Subscription)' : '(Renewal)'}`,
+          displayed: true,
+        });
+
+        console.log(`Rank extended for user ${userId} until ${expiresAt}, receipt: ${receiptNumber}`);
 
         // Send email notification
         try {

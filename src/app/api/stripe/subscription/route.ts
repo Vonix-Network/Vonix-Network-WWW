@@ -33,22 +33,39 @@ export async function GET(request: NextRequest) {
       limit: 100,
     });
 
-    // Transform to match expected format
-    const formattedSubs = subscriptions.data.map((sub: any) => ({
-      id: sub.id,
-      status: sub.status,
-      planName: sub.items.data[0]?.price.product?.name || sub.metadata?.rankName || 'Subscription',
-      amount: (sub.items.data[0]?.price.unit_amount || 0) / 100,
-      currency: sub.currency.toUpperCase(),
-      interval: sub.items.data[0]?.price.recurring?.interval || 'month',
-      intervalCount: sub.items.data[0]?.price.recurring?.interval_count || 1,
-      nextBillingDate: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : undefined,
-      canceledDate: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : undefined,
-      cancelAtPeriodEnd: sub.cancel_at_period_end,
-      currentPeriodStart: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : undefined,
-      currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : undefined,
-      paused: sub.pause_collection !== null,
-    }));
+    // Transform to match expected format with metadata
+    const formattedSubs = subscriptions.data.map((sub: any) => {
+      const metadata = sub.metadata || {};
+      const item = sub.items.data[0];
+      const recurring = item?.price.recurring || {};
+      
+      // Build display name from metadata
+      const rankName = metadata.rankName || 'Subscription';
+      const days = metadata.days || '30';
+      const intervalDisplay = metadata.interval || 
+        (recurring.interval_count === 3 && recurring.interval === 'month' ? 'Every 3 Months' :
+         recurring.interval_count === 6 && recurring.interval === 'month' ? 'Every 6 Months' :
+         recurring.interval === 'year' ? 'Yearly' : 'Monthly');
+      
+      return {
+        id: sub.id,
+        status: sub.status,
+        planName: rankName,
+        description: `${days} days - ${intervalDisplay}`,
+        amount: (item?.price.unit_amount || 0) / 100,
+        currency: sub.currency.toUpperCase(),
+        interval: recurring.interval || 'month',
+        intervalCount: recurring.interval_count || 1,
+        rankId: metadata.rankId,
+        days: parseInt(days),
+        nextBillingDate: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : undefined,
+        canceledDate: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : undefined,
+        cancelAtPeriodEnd: sub.cancel_at_period_end,
+        currentPeriodStart: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : undefined,
+        currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : undefined,
+        paused: sub.pause_collection !== null,
+      };
+    });
 
     return NextResponse.json({
       subscriptions: formattedSubs,

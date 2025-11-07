@@ -136,36 +136,30 @@ export async function POST(request: NextRequest) {
       // SUBSCRIPTION MODE - Stripe handles everything!
       console.log('Creating subscription checkout session...');
       
-      // Determine interval
-      let interval: 'month' | 'year' = 'month';
-      let intervalCount = 1;
-
-      if (days === 365) {
-        interval = 'year';
-        intervalCount = 1;
-      } else if (days === 180) {
-        interval = 'month';
-        intervalCount = 6;
-      } else if (days === 90) {
-        interval = 'month';
-        intervalCount = 3;
-      } else {
-        interval = 'month';
-        intervalCount = 1;
-      }
-
-      // Create price
+      // Calculate Stripe price based on interval
+      const interval = days === 90 ? 'month' as const : days === 180 ? 'month' as const : days === 365 ? 'year' as const : 'month' as const;
+      const intervalCount = days === 90 ? 3 : days === 180 ? 6 : days === 365 ? 1 : 1;
+      
+      // Create display name for interval
+      const intervalName = days === 90 ? 'Every 3 Months' : days === 180 ? 'Every 6 Months' : days === 365 ? 'Yearly' : 'Monthly';
+      
+      // Create price with metadata
       const price = await stripe.prices.create({
-        unit_amount: Math.round(amount * 100),
         currency: 'usd',
-        recurring: {
-          interval,
-          interval_count: intervalCount,
-        },
+        unit_amount: Math.round(amount * 100),
+        recurring: { interval, interval_count: intervalCount },
         product_data: {
-          name: `${rank.name} Rank Subscription - ${days} days`,
+          name: `${rank.name} Rank - ${intervalName}`,
+          metadata: {
+            rankId,
+            rankName: rank.name,
+            days: days.toString(),
+            interval: intervalName,
+          },
         },
       });
+
+      console.log('Price created:', price.id);
 
       checkoutSession = await stripe.checkout.sessions.create({
         customer: customerId,
@@ -182,12 +176,15 @@ export async function POST(request: NextRequest) {
           metadata: {
             userId: session.user.id,
             rankId,
+            rankName: rank.name,
             days: days.toString(),
           },
+          description: `${rank.name} Rank - ${days} days - ${intervalName}`,
         },
         metadata: {
           userId: session.user.id,
           rankId,
+          rankName: rank.name,
           days: days.toString(),
         },
         allow_promotion_codes: true,

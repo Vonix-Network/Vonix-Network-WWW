@@ -25,10 +25,13 @@ interface Subscription {
   id: string;
   status: string;
   planName: string;
+  description?: string;
   amount: number;
   currency: string;
   interval: string;
-  intervalCount?: number;
+  intervalCount: number;
+  rankId?: string;
+  days?: number;
   nextBillingDate?: string;
   canceledDate?: string;
   cancelAtPeriodEnd?: boolean;
@@ -303,6 +306,12 @@ export default function SubscriptionsPage() {
                           </h3>
                           {getStatusBadge(sub.status)}
                         </div>
+                        
+                        {sub.description && (
+                          <p className="text-sm text-gray-400 mb-2">
+                            {sub.description}
+                          </p>
+                        )}
                         
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center gap-2 text-gray-400">
