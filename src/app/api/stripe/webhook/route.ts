@@ -144,6 +144,8 @@ export async function POST(request: NextRequest) {
         const receiptNumber = `VN-${Date.now()}-${userId}`;
         await db.insert(donations).values({
           userId,
+          minecraftUsername: user.minecraftUsername,
+          minecraftUuid: user.minecraftUuid,
           amount,
           currency: invoice.currency?.toUpperCase() || 'USD',
           method: 'stripe',
@@ -639,6 +641,8 @@ export async function POST(request: NextRequest) {
         const receiptNumber = `VN-${Date.now()}-${userId}`;
         await db.insert(donations).values({
           userId: Number(userId),
+          minecraftUsername: user.minecraftUsername,
+          minecraftUuid: user.minecraftUuid,
           amount,
           currency: paymentIntent.currency?.toUpperCase() || 'USD',
           method: 'stripe',

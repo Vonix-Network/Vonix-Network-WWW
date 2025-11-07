@@ -57,7 +57,14 @@ export function DonorRanksManagement({ initialRanks }: DonorRanksManagementProps
         </TabsContent>
 
         <TabsContent value="users" className="mt-6">
-          <UserRanksClient initialRanks={initialRanks} />
+          <UserRanksClient 
+            initialRanks={initialRanks.map(rank => ({
+              ...rank,
+              badge: rank.badge ?? undefined,
+              icon: rank.icon ?? undefined,
+              subtitle: rank.subtitle ?? undefined,
+            }))} 
+          />
         </TabsContent>
       </Tabs>
     </div>
